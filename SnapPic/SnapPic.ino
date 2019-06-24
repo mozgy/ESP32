@@ -12,6 +12,9 @@
 #include <time.h>
 #include <FS.h>
 #include <SD_MMC.h>
+// #include "driver/rtc_io.h"
+
+#define SW_VERSION "1.00.03"
 
 // Select camera model
 //#define CAMERA_MODEL_WROVER_KIT
@@ -44,6 +47,7 @@ void prnEspStats( void ) {
   uint64_t chipid;
 
   Serial.println();
+  Serial.printf( "Sketch SW version: %s\n", SW_VERSION );
   Serial.printf( "Sketch size: %u\n", ESP.getSketchSize() );
   Serial.printf( "Free size: %u\n", ESP.getFreeSketchSpace() );
   Serial.printf( "Heap: %u\n", ESP.getFreeHeap() );
@@ -143,7 +147,7 @@ void getNTPTime( void ) {
     delay( 5000 );
     getLocalTime( &tmstruct, 5000 );
   }
-  Serial.printf( "Now is : %d-%02d-%02d %02d:%02d:%02d\n",(tmstruct.tm_year)+1900,( tmstruct.tm_mon)+1, tmstruct.tm_mday,tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
+  Serial.printf( "Now is : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year)+1900, (tmstruct.tm_mon)+1, tmstruct.tm_mday, tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
 
 //  // yes, I know it can be oneliner -
 //  sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
@@ -156,7 +160,8 @@ void getNTPTime( void ) {
 
 void initSDCard( void ) {
 
-  if( !SD_MMC.begin() ) {
+//  if( !SD_MMC.begin() ) {
+  if( !SD_MMC.begin( "/sdcard", true ) ) {
     Serial.println( "SD card init failed" );
     return;
   }
@@ -308,6 +313,13 @@ void doSnapPic( void ) {
 
   Serial.printf("Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024));
   Serial.printf("Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024));
+
+// DATA1 / Flash LED - PIN4
+// turn off AI-Thinker Board Flash LED
+// FIXME - findout if pinMode OUTPUT makes any problems here
+  pinMode( 4, OUTPUT );
+  digitalWrite(4, LOW );
+//  // rtc_gpio_hold_en( GPIO_NUM_4 );
 
 }
 
