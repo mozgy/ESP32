@@ -1,2 +1,5 @@
 # ESP32
-ESP32 Stuff
+Collection of various ESP32 projects ..
+
+--
+Mozz
