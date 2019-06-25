@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <WebServer.h>
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <Ticker.h>
@@ -14,7 +15,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.00.03"
+#define SW_VERSION "1.01.01"
 
 // Select camera model
 //#define CAMERA_MODEL_WROVER_KIT
@@ -33,6 +34,8 @@ struct tm tmstruct;
 
 char elapsedTimeString[40];
 char currentDateTime[17];
+
+WebServer server(80);
 
 Ticker tickerSnapPic;
 #define WAITTIME 60
@@ -94,7 +97,7 @@ void initOTA( void ) {
   // ArduinoOTA.setPort(3232);
 
   // Hostname defaults to esp3232-[MAC]
-  ArduinoOTA.setHostname("mozz-esp32-ai");
+  ArduinoOTA.setHostname("mozz-esp32-ai-3");
 
   // No authentication by default
   // ArduinoOTA.setPassword("admin");
@@ -272,6 +275,24 @@ void initCam( void ) {
 
 }
 
+void handleRoot( void ) {
+
+  String webText;
+
+  webText = "AI-Cam - " + String( elapsedTimeString );
+  ElapsedStr( elapsedTimeString );
+  server.send(200, "text/plain", webText );
+
+}
+
+void initWebServer( void ) {
+
+  server.on("/", handleRoot);
+
+  server.begin();
+
+}
+
 void doSnapPic( void ) {
 
   File picFileP;
@@ -311,14 +332,14 @@ void doSnapPic( void ) {
 
   picFileP.close();
 
-  Serial.printf("Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024));
-  Serial.printf("Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024));
+  Serial.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
+  Serial.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
 
 // DATA1 / Flash LED - PIN4
 // turn off AI-Thinker Board Flash LED
 // FIXME - findout if pinMode OUTPUT makes any problems here
-  pinMode( 4, OUTPUT );
-  digitalWrite(4, LOW );
+//  pinMode( 4, OUTPUT );
+//  digitalWrite( 4, LOW );
 //  // rtc_gpio_hold_en( GPIO_NUM_4 );
 
 }
@@ -379,6 +400,8 @@ void setup() {
 
   initOTA();
 
+  initWebServer();
+
   tickerSnapPic.attach( WAITTIME, flagSnapPicTicker );
   tickerFired = true;
 
@@ -394,5 +417,6 @@ void loop() {
   }
 
   ArduinoOTA.handle();
+  server.handleClient();
 
 }
