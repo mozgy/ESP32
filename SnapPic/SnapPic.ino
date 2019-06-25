@@ -15,7 +15,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.05"
+#define SW_VERSION "1.01.06"
 
 #define AI_CAM_SERIAL "3"
 
@@ -314,7 +314,7 @@ void handlePictures( void ) {
   }
   output += "]";
   server.send(200, "text/json", output);
-//FIXME
+
 }
 
 void handleNotFound( void ) {
@@ -334,15 +334,49 @@ void handleNotFound( void ) {
 
 }
 
+void handleFileRead( server.uri() ) {
+
+bool handleFileRead(String path) { // send the right file to the client (if it exists)
+  Serial.println("handleFileRead: " + path);
+  if (path.endsWith("/")) path += "index.html";          // If a folder is requested, send the index file
+  String contentType = getContentType(path);             // Get the MIME type
+  String pathWithGz = path + ".gz";
+  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) { // If the file exists, either as a compressed archive, or normal
+    if (SPIFFS.exists(pathWithGz))                         // If there's a compressed version available
+      path += ".gz";                                         // Use the compressed verion
+    File file = SPIFFS.open(path, "r");                    // Open the file
+    size_t sent = server.streamFile(file, contentType);    // Send it to the client
+    file.close();                                          // Close the file again
+    Serial.println(String("\tSent file: ") + path);
+    return true;
+  }
+  Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
+  return false;
+}
+
+}
+
 void initWebServer( void ) {
 
   server.on( "/", handleRoot );
 
   server.on( "/snaps", handlePictures );
 
-  server.onNotFound( handleNotFound );
+//  server.onNotFound( handleNotFound );
+  server.onNotFound([]() {
+    if ( !handleFileRead( server.uri() ) )
+      server.send( 404, "text/plain", "404: Not Found" );
+  });
 
   server.begin();
+
+/* can this work this way
+  server
+    .onNotFound
+    .on
+    .on
+    ...
+ */
 
 }
 
