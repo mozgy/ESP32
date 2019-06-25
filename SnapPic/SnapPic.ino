@@ -15,7 +15,9 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.01"
+#define SW_VERSION "1.01.05"
+
+#define AI_CAM_SERIAL "3"
 
 // Select camera model
 //#define CAMERA_MODEL_WROVER_KIT
@@ -97,6 +99,7 @@ void initOTA( void ) {
   // ArduinoOTA.setPort(3232);
 
   // Hostname defaults to esp3232-[MAC]
+  // add AI_CAM_SERIAL suffix
   ArduinoOTA.setHostname("mozz-esp32-ai-3");
 
   // No authentication by default
@@ -278,16 +281,66 @@ void initCam( void ) {
 void handleRoot( void ) {
 
   String webText;
+  char tmpStr[20];
 
-  webText = "AI-Cam - " + String( elapsedTimeString );
+  webText = "AI-Cam-" + String( AI_CAM_SERIAL );
+  webText = webText + "\n" + String( elapsedTimeString );
+  sprintf( tmpStr, "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+  webText = webText + "\n" + String( tmpStr );
+
   ElapsedStr( elapsedTimeString );
-  server.send(200, "text/plain", webText );
+  server.send( 200, "text/plain", webText ); // TODO - make me pwetty !
+
+}
+
+void handlePictures( void ) {
+
+  File picDir = SD_MMC.open( "/ai-cam" );
+  String output = "[";
+
+  if(picDir.isDirectory()){
+      File file = picDir.openNextFile();
+      while(file){
+          if (output != "[") {
+            output += ',';
+          }
+          output += "{\"type\":\"";
+          output += (file.isDirectory()) ? "dir" : "file";
+          output += "\",\"name\":\"";
+          output += String(file.name()).substring(1);
+          output += "\"}";
+          file = picDir.openNextFile();
+      }
+  }
+  output += "]";
+  server.send(200, "text/json", output);
+//FIXME
+}
+
+void handleNotFound( void ) {
+
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  server.send(404, "text/plain", message);
 
 }
 
 void initWebServer( void ) {
 
-  server.on("/", handleRoot);
+  server.on( "/", handleRoot );
+
+  server.on( "/snaps", handlePictures );
+
+  server.onNotFound( handleNotFound );
 
   server.begin();
 
@@ -338,8 +391,8 @@ void doSnapPic( void ) {
 // DATA1 / Flash LED - PIN4
 // turn off AI-Thinker Board Flash LED
 // FIXME - findout if pinMode OUTPUT makes any problems here
-//  pinMode( 4, OUTPUT );
-//  digitalWrite( 4, LOW );
+  pinMode( 4, OUTPUT );
+  digitalWrite( 4, LOW );
 //  // rtc_gpio_hold_en( GPIO_NUM_4 );
 
 }
