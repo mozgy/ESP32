@@ -314,7 +314,7 @@ void handlePictures( void ) {
   }
   output += "]";
   server.send(200, "text/json", output);
-//FIXME
+
 }
 
 void handleNotFound( void ) {
