@@ -15,9 +15,9 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.06"
+#define SW_VERSION "1.01.07"
 
-#define AI_CAM_SERIAL "3"
+#define AI_CAM_SERIAL "2"
 
 // Select camera model
 //#define CAMERA_MODEL_WROVER_KIT
@@ -71,6 +71,41 @@ void prnEspStats( void ) {
 
 }
 
+void ElapsedStr( char *str ) {
+
+  unsigned long sec, minute, hour;
+
+  sec = millis() / 1000;
+  minute = ( sec % 3600 ) / 60;
+  hour = sec / 3600;
+  sprintf( str, "Elapsed " );
+  if ( hour == 0 ) {
+    sprintf( str, "%s   ", str );
+  } else {
+    sprintf( str, "%s%2d:", str, hour );
+  }
+  if ( minute >= 10 ) {
+    sprintf( str, "%s%2d:", str, minute );
+  } else {
+    if ( hour != 0 ) {
+      sprintf( str, "%s0%1d:", str, minute );
+    } else {
+      sprintf( str, "%s ", str );
+      if ( minute == 0 ) {
+        sprintf( str, "%s  ", str );
+      } else {
+        sprintf( str, "%s%1d:", str, minute );
+      }
+    }
+  }
+  if ( ( sec % 60 ) < 10 ) {
+    sprintf( str, "%s0%1d", str, ( sec % 60 ) );
+  } else {
+    sprintf( str, "%s%2d", str, ( sec % 60 ) );
+  }
+
+}
+
 void initWiFi( void ) {
 
   WiFi.mode( WIFI_STA );
@@ -100,7 +135,7 @@ void initOTA( void ) {
 
   // Hostname defaults to esp3232-[MAC]
   // add AI_CAM_SERIAL suffix
-  ArduinoOTA.setHostname("mozz-esp32-ai-3");
+  ArduinoOTA.setHostname("mozz-esp32-ai-2");
 
   // No authentication by default
   // ArduinoOTA.setPassword("admin");
@@ -293,27 +328,47 @@ void handleRoot( void ) {
 
 }
 
-void handlePictures( void ) {
+void handleJSonList( void ) {
 
   File picDir = SD_MMC.open( "/ai-cam" );
   String output = "[";
 
-  if(picDir.isDirectory()){
-      File file = picDir.openNextFile();
-      while(file){
-          if (output != "[") {
-            output += ',';
-          }
-          output += "{\"type\":\"";
-          output += (file.isDirectory()) ? "dir" : "file";
-          output += "\",\"name\":\"";
-          output += String(file.name()).substring(1);
-          output += "\"}";
-          file = picDir.openNextFile();
-      }
+  if( picDir.isDirectory() ){
+    File file = picDir.openNextFile();
+    while( file ){
+        if( output != "[" ) {
+          output += ',';
+        }
+        output += "{\"type\":\"";
+        output += ( file.isDirectory() ) ? "dir" : "file";
+        output += "\",\"name\":\"";
+        output += String( file.name() ).substring(1);
+        output += "\"}";
+        file = picDir.openNextFile();
+    }
   }
   output += "]";
-  server.send(200, "text/json", output);
+  server.send( 200, "text/json", output );
+  picDir.close();
+
+}
+
+void handlePictures( void ) {
+
+  File picDir = SD_MMC.open( "/ai-cam" );
+  String myIP = "http://" + String( WiFi.localIP() );
+
+// http://ai-cam.ip/ai-cam/String(file.name())
+  String output = "";
+  if( picDir.isDirectory() ) {
+    File file = picDir.openNextFile();
+    while( file ) {
+      output += "http:// WiFi.localIP() /ai-cam/ file.name()\n";
+      file = picDir.openNextFile();
+    }
+    server.send( 200, "text/plain", output );
+    picDir.close();
+  }
 
 }
 
@@ -334,6 +389,7 @@ void handleNotFound( void ) {
 
 }
 
+/*
 void handleFileRead( server.uri() ) {
 
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
@@ -355,18 +411,23 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
 }
 
 }
+ */
 
 void initWebServer( void ) {
 
   server.on( "/", handleRoot );
 
+  server.on( "/json", handleJSonList );
+
   server.on( "/snaps", handlePictures );
 
-//  server.onNotFound( handleNotFound );
+  server.onNotFound( handleNotFound );
+/*
   server.onNotFound([]() {
     if ( !handleFileRead( server.uri() ) )
       server.send( 404, "text/plain", "404: Not Found" );
   });
+ */
 
   server.begin();
 
@@ -383,18 +444,25 @@ void initWebServer( void ) {
 void doSnapPic( void ) {
 
   File picFileP;
+  String picFileDir;
   String picFileName;
   camera_fb_t * picFrameBuffer = NULL;
 
   tmstruct.tm_year = 0;
   getLocalTime( &tmstruct, 5000 );
+
+  sprintf( currentDateTime, "%02d", (tmstruct.tm_mon)+1 );
+  sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_mday );
+  picFileDir = String( "/ai-cam/" ) + currentDateTime;
+  SD_MMC.mkdir( picFileDir ); // TODO - check error/return status
+
   // yes, I know it can be oneliner -
   sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
   sprintf( currentDateTime, "%s%02d", currentDateTime, (tmstruct.tm_mon)+1 );
   sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_mday );
   sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_hour );
   sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_min );
-  picFileName = String( "/ai-cam/SNAP-" ) + currentDateTime + String( ".jpg" ) ;
+  picFileName = picFileDir + String( "/SNAP-" ) + currentDateTime + String( ".jpg" ) ;
   Serial.println( picFileName );
 
   picFileP = SD_MMC.open( picFileName, FILE_WRITE );
@@ -428,41 +496,6 @@ void doSnapPic( void ) {
   pinMode( 4, OUTPUT );
   digitalWrite( 4, LOW );
 //  // rtc_gpio_hold_en( GPIO_NUM_4 );
-
-}
-
-void ElapsedStr( char *str ) {
-
-  unsigned long sec, minute, hour;
-
-  sec = millis() / 1000;
-  minute = ( sec % 3600 ) / 60;
-  hour = sec / 3600;
-  sprintf( str, "Elapsed " );
-  if ( hour == 0 ) {
-    sprintf( str, "%s   ", str );
-  } else {
-    sprintf( str, "%s%2d:", str, hour );
-  }
-  if ( minute >= 10 ) {
-    sprintf( str, "%s%2d:", str, minute );
-  } else {
-    if ( hour != 0 ) {
-      sprintf( str, "%s0%1d:", str, minute );
-    } else {
-      sprintf( str, "%s ", str );
-      if ( minute == 0 ) {
-        sprintf( str, "%s  ", str );
-      } else {
-        sprintf( str, "%s%1d:", str, minute );
-      }
-    }
-  }
-  if ( ( sec % 60 ) < 10 ) {
-    sprintf( str, "%s0%1d", str, ( sec % 60 ) );
-  } else {
-    sprintf( str, "%s%2d", str, ( sec % 60 ) );
-  }
 
 }
 
