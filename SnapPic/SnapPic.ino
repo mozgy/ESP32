@@ -313,18 +313,42 @@ void initCam( void ) {
 
 }
 
+void listDirectory( File path ) {
+
+  String linkName;
+  String output = "";
+
+  output += "<!DOCTYPE html><html>\n";
+  output += "<title>Cam 3</title>\n";
+  output += "<body>";
+  if( path.isDirectory() ) {
+    File file = path.openNextFile();
+    while( file ) {
+      linkName = String( file.name() );
+      output += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
+      file = path.openNextFile();
+    }
+    output += "</body>";
+    output += "</html>";
+    server.send( 200, "text/html", output );
+  }
+
+}
+
 bool loadFromSDCard( String path ) {
 
   String dataType;
 
-  if (path.endsWith("/")) {
-    path += "index.htm";
-    dataType = "text/plain";
+  File dataFile = SD_MMC.open( path.c_str() );
+
+//  if( path.endsWith("/") ) {
+  if( dataFile.isDirectory() ) {
+    listDirectory( dataFile );
+    dataFile.close();
+    return true;
   } else if (path.endsWith(".jpg")) {
     dataType = "image/jpeg";
   }
-
-  File dataFile = SD_MMC.open( path.c_str() );
 
   if( !dataFile ) {
     return false;
@@ -385,28 +409,12 @@ void handleJSonList( void ) {
 
 void handlePictures( void ) {
 
-  File picDir = SD_MMC.open( "/ai-cam" );
-  String linkName;
-  String output = "";
+  File picDir;
 
-  output += "<!DOCTYPE html><html>\n";
-  output += "<title>Cam 3</title>\n";
-  output += "<body>";
-  if( picDir.isDirectory() ) {
-    File file = picDir.openNextFile();
-    while( file ) {
-      linkName = String( file.name() );
-      output += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
-      file = picDir.openNextFile();
-    }
-    output += "</body>";
-    output += "</html>";
-    server.send( 200, "text/html", output );
-    picDir.close();
-  }
+  picDir = SD_MMC.open( "/ai-cam" );
+  listDirectory( picDir );
+  picDir.close();
 
-//  String myIP = "http://" + String( WiFi.localIP() );
-// http://ai-cam.ip/ai-cam/String(file.name())
 }
 
 void handleNotFound( void ) {
@@ -429,30 +437,6 @@ void handleNotFound( void ) {
   server.send(404, "text/plain", message);
 
 }
-
-/*
-void handleFileRead( server.uri() ) {
-
-bool handleFileRead(String path) { // send the right file to the client (if it exists)
-  Serial.println("handleFileRead: " + path);
-  if (path.endsWith("/")) path += "index.html";          // If a folder is requested, send the index file
-  String contentType = getContentType(path);             // Get the MIME type
-  String pathWithGz = path + ".gz";
-  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) { // If the file exists, either as a compressed archive, or normal
-    if (SPIFFS.exists(pathWithGz))                         // If there's a compressed version available
-      path += ".gz";                                         // Use the compressed verion
-    File file = SPIFFS.open(path, "r");                    // Open the file
-    size_t sent = server.streamFile(file, contentType);    // Send it to the client
-    file.close();                                          // Close the file again
-    Serial.println(String("\tSent file: ") + path);
-    return true;
-  }
-  Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
-  return false;
-}
-
-}
- */
 
 void initWebServer( void ) {
 
