@@ -15,9 +15,9 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.07"
+#define SW_VERSION "1.01.08"
 
-#define AI_CAM_SERIAL "2"
+#define AI_CAM_SERIAL "3"
 
 // Select camera model
 //#define CAMERA_MODEL_WROVER_KIT
@@ -135,7 +135,7 @@ void initOTA( void ) {
 
   // Hostname defaults to esp3232-[MAC]
   // add AI_CAM_SERIAL suffix
-  ArduinoOTA.setHostname("mozz-esp32-ai-2");
+  ArduinoOTA.setHostname("mozz-esp32-ai-3");
 
   // No authentication by default
   // ArduinoOTA.setPassword("admin");
@@ -313,6 +313,36 @@ void initCam( void ) {
 
 }
 
+bool loadFromSDCard( String path ) {
+
+  String dataType;
+
+  if (path.endsWith("/")) {
+    path += "index.htm";
+    dataType = "text/plain";
+  } else if (path.endsWith(".jpg")) {
+    dataType = "image/jpeg";
+  }
+
+  File dataFile = SD_MMC.open( path.c_str() );
+
+  if( !dataFile ) {
+    return false;
+  }
+
+  if( server.hasArg( "download" ) ) {
+    dataType = "application/octet-stream";
+  }
+
+  if( server.streamFile( dataFile, dataType ) != dataFile.size() ) {
+    Serial.println("Sent less data than expected!");
+  }
+
+  dataFile.close();
+  return true;
+
+}
+
 void handleRoot( void ) {
 
   String webText;
@@ -356,23 +386,34 @@ void handleJSonList( void ) {
 void handlePictures( void ) {
 
   File picDir = SD_MMC.open( "/ai-cam" );
-  String myIP = "http://" + String( WiFi.localIP() );
-
-// http://ai-cam.ip/ai-cam/String(file.name())
+  String linkName;
   String output = "";
+
+  output += "<!DOCTYPE html><html>\n";
+  output += "<title>Cam 3</title>\n";
+  output += "<body>";
   if( picDir.isDirectory() ) {
     File file = picDir.openNextFile();
     while( file ) {
-      output += "http:// WiFi.localIP() /ai-cam/ file.name()\n";
+      linkName = String( file.name() );
+      output += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
       file = picDir.openNextFile();
     }
-    server.send( 200, "text/plain", output );
+    output += "</body>";
+    output += "</html>";
+    server.send( 200, "text/html", output );
     picDir.close();
   }
 
+//  String myIP = "http://" + String( WiFi.localIP() );
+// http://ai-cam.ip/ai-cam/String(file.name())
 }
 
 void handleNotFound( void ) {
+
+  if( loadFromSDCard( server.uri() ) ) {
+    return;
+  }
 
   String message = "File Not Found\n\n";
   message += "URI: ";
