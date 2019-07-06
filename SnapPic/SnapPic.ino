@@ -15,7 +15,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.14"
+#define SW_VERSION "1.01.15"
 
 #define AI_CAM_SERIAL "3"
 
@@ -565,7 +565,7 @@ void setup() {
   Serial.begin( 115200 );
   delay( 10 );
   Serial.setDebugOutput( true );
-//  WiFi.printDiag(Serial); // research this
+  WiFi.printDiag(Serial); // research this
   Serial.println();
 
   prnEspStats();
