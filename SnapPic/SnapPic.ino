@@ -15,7 +15,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.08"
+#define SW_VERSION "1.01.11"
 
 #define AI_CAM_SERIAL "3"
 
@@ -27,6 +27,8 @@
 #define CAMERA_MODEL_AI_THINKER
 
 #include "camera_pins.h"
+// DATA1 / Flash LED - PIN4
+#define FLASH_LED 4
 
 #include "credentials.h"
 
@@ -106,24 +108,32 @@ void ElapsedStr( char *str ) {
 
 }
 
+void waitForConnect ( unsigned long timeout ) {
+
+  unsigned long timeWiFi = millis();
+
+  while( WiFi.status() != WL_CONNECTED ) {
+    if( ( millis() - timeWiFi ) > timeout )
+      break;
+  }
+
+}
+
 void initWiFi( void ) {
 
+  WiFi.softAPdisconnect( true );
   WiFi.mode( WIFI_STA );
   WiFi.begin( ssid, password );
 
-// // FIXME - this check blows, should be better ..
-//  while ( WiFi.status() != WL_CONNECTED ) {
-//    delay( 500 );
-//    Serial.print( "." );
-//  }
-
-  while ( WiFi.waitForConnectResult() != WL_CONNECTED ) {
+// FIXME - this could be better!
+  waitForConnect( 10 * 1000 );
+  while( WiFi.waitForConnectResult() != WL_CONNECTED ) {
     Serial.println( "Connection Failed! Rebooting..." );
     delay( 5000 );
     ESP.restart();
   }
+// FIXME - this could be better!
 
-//  Serial.println( "" );
   Serial.println( "WiFi connected" );
 
 }
@@ -316,21 +326,21 @@ void initCam( void ) {
 void listDirectory( File path ) {
 
   String linkName;
-  String output = "";
+  String webText;
 
-  output += "<!DOCTYPE html><html>\n";
-  output += "<title>Cam 3</title>\n";
-  output += "<body>";
+  webText = "<!DOCTYPE html><html>\n";
+  webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
+  webText += "<body>";
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
-      output += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
+      webText += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
       file = path.openNextFile();
     }
-    output += "</body>";
-    output += "</html>";
-    server.send( 200, "text/html", output );
+    webText += "</body>";
+    webText += "</html>";
+    server.send( 200, "text/html", webText );
   }
 
 }
@@ -372,37 +382,44 @@ void handleRoot( void ) {
   String webText;
   char tmpStr[20];
 
-  webText = "AI-Cam-" + String( AI_CAM_SERIAL );
-  webText = webText + "\n" + String( elapsedTimeString );
-  sprintf( tmpStr, "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
-  webText = webText + "\n" + String( tmpStr );
-
+  webText = "<!DOCTYPE html><html>\n";
+  webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
+  webText += "<body>";
+  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
+  webText += "Software Version " + String( SW_VERSION ) + "<br>";
   ElapsedStr( elapsedTimeString );
-  server.send( 200, "text/plain", webText ); // TODO - make me pwetty !
+  webText += String( elapsedTimeString ) + "<br>";
+  sprintf( tmpStr, "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+  webText += String( tmpStr ) + "<p>";
+  webText += "<a href=/snaps>Pictures</a><br>";
+  webText += "</body>";
+  webText += "</html>";
+
+  server.send( 200, "text/html", webText ); // TODO - make me pwetty !
 
 }
 
 void handleJSonList( void ) {
 
   File picDir = SD_MMC.open( "/ai-cam" );
-  String output = "[";
+  String webText = "[";
 
   if( picDir.isDirectory() ){
     File file = picDir.openNextFile();
     while( file ){
-        if( output != "[" ) {
-          output += ',';
+        if( webText != "[" ) {
+          webText += ',';
         }
-        output += "{\"type\":\"";
-        output += ( file.isDirectory() ) ? "dir" : "file";
-        output += "\",\"name\":\"";
-        output += String( file.name() ).substring(1);
-        output += "\"}";
+        webText += "{\"type\":\"";
+        webText += ( file.isDirectory() ) ? "dir" : "file";
+        webText += "\",\"name\":\"";
+        webText += String( file.name() ).substring(1);
+        webText += "\"}";
         file = picDir.openNextFile();
     }
   }
-  output += "]";
-  server.send( 200, "text/json", output );
+  webText += "]";
+  server.send( 200, "text/json", webText );
   picDir.close();
 
 }
@@ -423,18 +440,18 @@ void handleNotFound( void ) {
     return;
   }
 
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
+  String webText = "File Not Found\n\n";
+  webText += "URI: ";
+  webText += server.uri();
+  webText += "\nMethod: ";
+  webText += (server.method() == HTTP_GET) ? "GET" : "POST";
+  webText += "\nArguments: ";
+  webText += server.args();
+  webText += "\n";
   for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    webText += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
-  server.send(404, "text/plain", message);
+  server.send(404, "text/plain", webText);
 
 }
 
@@ -495,7 +512,12 @@ void doSnapPic( void ) {
     Serial.println( "error opening file for picture" );
   }
 
+  pinMode( FLASH_LED, OUTPUT );
+  digitalWrite( FLASH_LED, HIGH );
+  delay( 50 );
   picFrameBuffer = esp_camera_fb_get();
+  pinMode( FLASH_LED, OUTPUT );
+  digitalWrite( FLASH_LED, LOW ); // turn off AI-Thinker Board Flash LED
   if( !picFrameBuffer ) {
     Serial.println( "Camera capture failed" );
     return;
@@ -540,6 +562,10 @@ void setup() {
 
   delay( 1000 );
   initCam();
+  // FIXME - findout if pinMode OUTPUT makes any problems here
+  pinMode( FLASH_LED, OUTPUT );
+  // turn off AI-Thinker Board Flash LED
+  digitalWrite( FLASH_LED, LOW );
 
   initSDCard();
 
@@ -554,14 +580,14 @@ void setup() {
 
 void loop() {
 
+  ArduinoOTA.handle();
+  server.handleClient();
+
   if( tickerFired ) {
     tickerFired = false;
     doSnapPic();
     ElapsedStr( elapsedTimeString );
     Serial.println( elapsedTimeString );
   }
-
-  ArduinoOTA.handle();
-  server.handleClient();
 
 }
