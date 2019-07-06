@@ -136,6 +136,16 @@ void initWiFi( void ) {
 
   Serial.println( "WiFi connected" );
 
+/* SOME ADVICE
+atanisoft@atanisoft17:15
+you can achieve the same with WiFi lib though :)
+
+WiFi.onEvent([](system_event_id_t event) {
+  WiFi.disconnect();
+  WiFi.begin();
+}, SYSTEM_EVENT_STA_LOST_IP);
+ */
+
 }
 
 void initOTA( void ) {
@@ -327,6 +337,7 @@ void listDirectory( File path ) {
 
   String linkName;
   String webText;
+  int numPic = 0;
 
   webText = "<!DOCTYPE html><html>\n";
   webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
@@ -337,7 +348,9 @@ void listDirectory( File path ) {
       linkName = String( file.name() );
       webText += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
       file = path.openNextFile();
+      numPic++;
     }
+    webText += "Number of snapped pictures - " + String( numPic ) + "<br>";
     webText += "</body>";
     webText += "</html>";
     server.send( 200, "text/html", webText );
@@ -356,7 +369,7 @@ bool loadFromSDCard( String path ) {
     listDirectory( dataFile );
     dataFile.close();
     return true;
-  } else if (path.endsWith(".jpg")) {
+  } else if( path.endsWith( ".jpg" ) ) {
     dataType = "image/jpeg";
   }
 
@@ -369,7 +382,7 @@ bool loadFromSDCard( String path ) {
   }
 
   if( server.streamFile( dataFile, dataType ) != dataFile.size() ) {
-    Serial.println("Sent less data than expected!");
+    Serial.println( "Sent less data than expected!" );
   }
 
   dataFile.close();
@@ -503,8 +516,9 @@ void doSnapPic( void ) {
   sprintf( currentDateTime, "%s%02d", currentDateTime, (tmstruct.tm_mon)+1 );
   sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_mday );
   sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_hour );
-  sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_min );
-  picFileName = picFileDir + String( "/SNAP-" ) + currentDateTime + String( ".jpg" ) ;
+  sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_min );
+  sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_sec );
+  picFileName = picFileDir + String( "/PIC-" ) + currentDateTime + String( ".jpg" ) ;
   Serial.println( picFileName );
 
   picFileP = SD_MMC.open( picFileName, FILE_WRITE );
@@ -551,6 +565,7 @@ void setup() {
   Serial.begin( 115200 );
   delay( 10 );
   Serial.setDebugOutput( true );
+//  WiFi.printDiag(Serial); // research this
   Serial.println();
 
   prnEspStats();
@@ -588,6 +603,11 @@ void loop() {
     doSnapPic();
     ElapsedStr( elapsedTimeString );
     Serial.println( elapsedTimeString );
+  }
+
+  if( WiFi.status() != WL_CONNECTED ) {
+    WiFi.disconnect();
+    WiFi.begin();
   }
 
 }
