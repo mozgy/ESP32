@@ -15,7 +15,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.11"
+#define SW_VERSION "1.01.14"
 
 #define AI_CAM_SERIAL "3"
 
