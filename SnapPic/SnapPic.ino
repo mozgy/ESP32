@@ -6,6 +6,8 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <WebServer.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <Ticker.h>
@@ -15,7 +17,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.15"
+#define SW_VERSION "1.01.16"
 
 #define AI_CAM_SERIAL "3"
 
@@ -39,7 +41,9 @@ struct tm tmstruct;
 char elapsedTimeString[40];
 char currentDateTime[17];
 
-WebServer server(80);
+WebServer webServer(80);
+
+AsyncWebServer asyncWebServer(8080);
 
 Ticker tickerSnapPic;
 #define WAITTIME 60
@@ -350,10 +354,10 @@ void listDirectory( File path ) {
       file = path.openNextFile();
       numPic++;
     }
-    webText += "Number of snapped pictures - " + String( numPic ) + "<br>";
+    webText += "Number of entries - " + String( numPic ) + "<br>";
     webText += "</body>";
     webText += "</html>";
-    server.send( 200, "text/html", webText );
+    webServer.send( 200, "text/html", webText );
   }
 
 }
@@ -377,11 +381,11 @@ bool loadFromSDCard( String path ) {
     return false;
   }
 
-  if( server.hasArg( "download" ) ) {
+  if( webServer.hasArg( "download" ) ) {
     dataType = "application/octet-stream";
   }
 
-  if( server.streamFile( dataFile, dataType ) != dataFile.size() ) {
+  if( webServer.streamFile( dataFile, dataType ) != dataFile.size() ) {
     Serial.println( "Sent less data than expected!" );
   }
 
@@ -408,7 +412,7 @@ void handleRoot( void ) {
   webText += "</body>";
   webText += "</html>";
 
-  server.send( 200, "text/html", webText ); // TODO - make me pwetty !
+  webServer.send( 200, "text/html", webText ); // TODO - make me pwetty !
 
 }
 
@@ -432,7 +436,7 @@ void handleJSonList( void ) {
     }
   }
   webText += "]";
-  server.send( 200, "text/json", webText );
+  webServer.send( 200, "text/json", webText );
   picDir.close();
 
 }
@@ -449,50 +453,60 @@ void handlePictures( void ) {
 
 void handleNotFound( void ) {
 
-  if( loadFromSDCard( server.uri() ) ) {
+  if( loadFromSDCard( webServer.uri() ) ) {
     return;
   }
 
   String webText = "File Not Found\n\n";
   webText += "URI: ";
-  webText += server.uri();
+  webText += webServer.uri();
   webText += "\nMethod: ";
-  webText += (server.method() == HTTP_GET) ? "GET" : "POST";
+  webText += ( webServer.method() == HTTP_GET ) ? "GET" : "POST";
   webText += "\nArguments: ";
-  webText += server.args();
+  webText += webServer.args();
   webText += "\n";
-  for (uint8_t i = 0; i < server.args(); i++) {
-    webText += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  for( uint8_t i = 0; i < webServer.args(); i++ ) {
+    webText += " " + webServer.argName( i ) + ": " + webServer.arg( i ) + "\n";
   }
-  server.send(404, "text/plain", webText);
+  webServer.send( 404, "text/plain", webText );
 
 }
 
 void initWebServer( void ) {
 
-  server.on( "/", handleRoot );
+  webServer.on( "/", handleRoot );
 
-  server.on( "/json", handleJSonList );
+  webServer.on( "/json", handleJSonList );
 
-  server.on( "/snaps", handlePictures );
+  webServer.on( "/snaps", handlePictures );
 
-  server.onNotFound( handleNotFound );
+  webServer.onNotFound( handleNotFound );
 /*
-  server.onNotFound([]() {
+  webServer.onNotFound([]() {
     if ( !handleFileRead( server.uri() ) )
       server.send( 404, "text/plain", "404: Not Found" );
   });
  */
 
-  server.begin();
+  webServer.begin();
 
 /* can this work this way
-  server
+  webServer
     .onNotFound
     .on
     .on
     ...
  */
+
+}
+
+void initAsyncWebServer( void ) {
+
+  asyncWebServer.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "Hello, world");
+  });
+
+  asyncWebServer.begin();
 
 }
 
@@ -507,8 +521,12 @@ void doSnapPic( void ) {
   getLocalTime( &tmstruct, 5000 );
 
   sprintf( currentDateTime, "%02d", (tmstruct.tm_mon)+1 );
-  sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_mday );
+  sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_mday );
   picFileDir = String( "/ai-cam/" ) + currentDateTime;
+  // TODO-FIXME - maybe only one subdir ??
+  SD_MMC.mkdir( picFileDir ); // TODO - check error/return status
+  sprintf( currentDateTime, "/%02d\0", tmstruct.tm_hour );
+  picFileDir += String( currentDateTime );
   SD_MMC.mkdir( picFileDir ); // TODO - check error/return status
 
   // yes, I know it can be oneliner -
@@ -588,6 +606,8 @@ void setup() {
 
   initWebServer();
 
+  initAsyncWebServer();
+
   tickerSnapPic.attach( WAITTIME, flagSnapPicTicker );
   tickerFired = true;
 
@@ -596,7 +616,7 @@ void setup() {
 void loop() {
 
   ArduinoOTA.handle();
-  server.handleClient();
+  webServer.handleClient();
 
   if( tickerFired ) {
     tickerFired = false;
