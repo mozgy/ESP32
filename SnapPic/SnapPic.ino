@@ -1,6 +1,8 @@
 //
 // (c) mozgy
 //
+// MIT Licence
+//
 
 #include <Arduino.h>
 #include "esp_camera.h"
@@ -17,7 +19,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.16"
+#define SW_VERSION "1.01.17"
 
 #define AI_CAM_SERIAL "3"
 
@@ -31,6 +33,7 @@
 #include "camera_pins.h"
 // DATA1 / Flash LED - PIN4
 #define FLASH_LED 4
+#define FLASH_ENABLE false
 
 #include "credentials.h"
 
@@ -332,8 +335,41 @@ void initCam( void ) {
 //  Serial.println( "Framesize QVGA" );
 //
 //  s->set_vflip( s, 1 );
-  s->set_framesize( s, FRAMESIZE_SVGA );
-  Serial.println( "Framesize SVGA" );
+//  s->set_framesize( s, FRAMESIZE_SVGA );
+//  Serial.println( "Framesize SVGA - 800x600" );
+  s->set_framesize( s, FRAMESIZE_XGA );
+  Serial.println( "Framesize XGA - 1024x768" );
+
+}
+
+void flashON( void ) {
+
+  if( !FLASH_ENABLE )
+    return;
+
+  pinMode( FLASH_LED, OUTPUT );
+  digitalWrite( FLASH_LED, HIGH );
+
+}
+
+void flashOFF( void ) {
+
+//  if( !FLASH_ENABLE )
+//    return;
+
+  pinMode( FLASH_LED, OUTPUT );
+  digitalWrite( FLASH_LED, LOW );
+
+// DATA1 / Flash LED - PIN4
+// turn off AI-Thinker Board Flash LED
+// FIXME - findout if pinMode OUTPUT makes any problems here
+//  pinMode( 4, OUTPUT );
+//  digitalWrite( 4, LOW );
+//  // rtc_gpio_hold_en( GPIO_NUM_4 );
+//  // FIXME - findout if pinMode OUTPUT makes any problems here
+//  pinMode( FLASH_LED, OUTPUT );
+//  // turn off AI-Thinker Board Flash LED
+//  digitalWrite( FLASH_LED, LOW );
 
 }
 
@@ -544,12 +580,10 @@ void doSnapPic( void ) {
     Serial.println( "error opening file for picture" );
   }
 
-  pinMode( FLASH_LED, OUTPUT );
-  digitalWrite( FLASH_LED, HIGH );
+  flashON();
   delay( 50 );
   picFrameBuffer = esp_camera_fb_get();
-  pinMode( FLASH_LED, OUTPUT );
-  digitalWrite( FLASH_LED, LOW ); // turn off AI-Thinker Board Flash LED
+  flashOFF();
   if( !picFrameBuffer ) {
     Serial.println( "Camera capture failed" );
     return;
@@ -568,13 +602,6 @@ void doSnapPic( void ) {
 
   Serial.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
   Serial.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
-
-// DATA1 / Flash LED - PIN4
-// turn off AI-Thinker Board Flash LED
-// FIXME - findout if pinMode OUTPUT makes any problems here
-  pinMode( 4, OUTPUT );
-  digitalWrite( 4, LOW );
-//  // rtc_gpio_hold_en( GPIO_NUM_4 );
 
 }
 
@@ -595,10 +622,7 @@ void setup() {
 
   delay( 1000 );
   initCam();
-  // FIXME - findout if pinMode OUTPUT makes any problems here
-  pinMode( FLASH_LED, OUTPUT );
-  // turn off AI-Thinker Board Flash LED
-  digitalWrite( FLASH_LED, LOW );
+  flashOFF();
 
   initSDCard();
 
