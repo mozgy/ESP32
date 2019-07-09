@@ -19,7 +19,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.17"
+#define SW_VERSION "1.01.18"
 
 #define AI_CAM_SERIAL "3"
 
@@ -373,7 +373,7 @@ void flashOFF( void ) {
 
 }
 
-void listDirectory( File path ) {
+String listDirectory( File path ) {
 
   String linkName;
   String webText;
@@ -393,20 +393,22 @@ void listDirectory( File path ) {
     webText += "Number of entries - " + String( numPic ) + "<br>";
     webText += "</body>";
     webText += "</html>";
-    webServer.send( 200, "text/html", webText );
   }
+  return webText;
 
 }
 
 bool loadFromSDCard( String path ) {
 
   String dataType;
+  String webText;
 
   File dataFile = SD_MMC.open( path.c_str() );
 
-//  if( path.endsWith("/") ) {
+// NO index.html handling for '/' - maybe TODO later
   if( dataFile.isDirectory() ) {
-    listDirectory( dataFile );
+    webText = listDirectory( dataFile );
+    webServer.send( 200, "text/html", webText );
     dataFile.close();
     return true;
   } else if( path.endsWith( ".jpg" ) ) {
@@ -460,15 +462,15 @@ void handleJSonList( void ) {
   if( picDir.isDirectory() ){
     File file = picDir.openNextFile();
     while( file ){
-        if( webText != "[" ) {
-          webText += ',';
-        }
-        webText += "{\"type\":\"";
-        webText += ( file.isDirectory() ) ? "dir" : "file";
-        webText += "\",\"name\":\"";
-        webText += String( file.name() ).substring(1);
-        webText += "\"}";
-        file = picDir.openNextFile();
+      if( webText != "[" ) {
+        webText += ',';
+      }
+      webText += "{\"type\":\"";
+      webText += ( file.isDirectory() ) ? "dir" : "file";
+      webText += "\",\"name\":\"";
+      webText += String( file.name() ).substring(1);
+      webText += "\"}";
+      file = picDir.openNextFile();
     }
   }
   webText += "]";
@@ -480,9 +482,11 @@ void handleJSonList( void ) {
 void handlePictures( void ) {
 
   File picDir;
+  String webText;
 
   picDir = SD_MMC.open( "/ai-cam" );
-  listDirectory( picDir );
+  webText = listDirectory( picDir );
+  webServer.send( 200, "text/html", webText );
   picDir.close();
 
 }
@@ -536,11 +540,57 @@ void initWebServer( void ) {
 
 }
 
+bool loadFromSDCard( AsyncWebServerRequest *request ) {
+
+  return false;
+
+}
+
+void asyncHandlePictures( AsyncWebServerRequest *request ) {
+
+  File picDir;
+  String webText;
+
+  picDir = SD_MMC.open( "/ai-cam" );
+  webText = listDirectory( picDir );
+  request->send( 200, "text/html", webText );
+  picDir.close();
+
+}
+
+void asyncHandleNotFound( AsyncWebServerRequest *request ) {
+
+  String path = request->url();
+
+  // TODO - no index.html here, just plain dir listing
+  if( loadFromSDCard( request ) ) {
+    return;
+  }
+
+  String webText = "\nNo Handler\r\n";
+  webText += "URI: ";
+  webText += request->url();
+  webText += "\nMethod: ";
+  webText += ( request->method() == HTTP_GET ) ? "GET" : "POST";
+  webText += "\nParameters: ";
+  webText += request->params();
+  webText += "\n";
+  for( uint8_t i = 0 ; i < request->params(); i++ ) {
+    AsyncWebParameter* p = request->getParam( i );
+    webText += String( p->name().c_str() ) + " : " + String( p->value().c_str() ) + "\r\n";
+  }
+  request->send( 404, "text/plain", webText );
+  Serial.println( webText );
+
+}
+
 void initAsyncWebServer( void ) {
 
-  asyncWebServer.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  asyncWebServer.on( "/", HTTP_GET, [](AsyncWebServerRequest *request ){
     request->send(200, "text/plain", "Hello, world");
   });
+  asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
+  asyncWebServer.onNotFound( asyncHandleNotFound );
 
   asyncWebServer.begin();
 
