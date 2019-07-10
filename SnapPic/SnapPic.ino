@@ -542,6 +542,24 @@ void initWebServer( void ) {
 
 bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
+  String dataType;
+  String webText;
+  String path = request->url();
+
+  File dataFile = SD_MMC.open( path.c_str() );
+
+// NO index.html handling for '/' - maybe TODO later
+  if( dataFile.isDirectory() ) {
+    webText = listDirectory( dataFile );
+    request->send( 200, "text/html", webText );
+    dataFile.close();
+    return true;
+  } else if( path.endsWith( ".jpg" ) ) {
+    dataType = "image/jpeg";
+  }
+
+  dataFile.close();
+
   return false;
 
 }
