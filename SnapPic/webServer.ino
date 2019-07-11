@@ -199,16 +199,16 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
     dataType = "image/jpeg";
   }
 
-  if( request->hasParam( "download" ) ) dataType = "application/octet-stream";
+// void send(File content, const String& path, const String& contentType=String(), bool download=false, AwsTemplateProcessor callback=nullptr);
+//  if( request->hasParam( "download" ) ) dataType = "application/octet-stream";
+//  response->addHeader("Content-Encoding", "gzip");
 
-  if( webServer.streamFile( dataFile, dataType ) != dataFile.size() ) {
-    Serial.println( "Sent less data than expected!" );
-  }
+  request->send( dataFile, path.c_str(), dataType );
 
   dataFile.close();
 
   return false;
-  // return true;
+  return true;
 
 }
 
@@ -257,6 +257,37 @@ void initAsyncWebServer( void ) {
   });
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
+
+/*
+//First request will return 0 results unless you start scan from somewhere else (loop/setup)
+//Do not request more often than 3-5 seconds
+asyncWebServer.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
+  String json = "[";
+  int n = WiFi.scanComplete();
+  if(n == -2){
+    WiFi.scanNetworks(true);
+  } else if(n){
+    for (int i = 0; i < n; ++i){
+      if(i) json += ",";
+      json += "{";
+      json += "\"rssi\":"+String(WiFi.RSSI(i));
+      json += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
+      json += ",\"bssid\":\""+WiFi.BSSIDstr(i)+"\"";
+      json += ",\"channel\":"+String(WiFi.channel(i));
+      json += ",\"secure\":"+String(WiFi.encryptionType(i));
+      json += ",\"hidden\":"+String(WiFi.isHidden(i)?"true":"false");
+      json += "}";
+    }
+    WiFi.scanDelete();
+    if(WiFi.scanComplete() == -2){
+      WiFi.scanNetworks(true);
+    }
+  }
+  json += "]";
+  request->send(200, "application/json", json);
+  json = String();
+});
+ */
 
   asyncWebServer.begin();
 
