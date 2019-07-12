@@ -19,7 +19,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.20"
+#define SW_VERSION "1.01.21"
 
 #define AI_CAM_SERIAL "3"
 
@@ -33,7 +33,7 @@
 #include "camera_pins.h"
 // DATA1 / Flash LED - PIN4
 #define FLASH_LED 4
-#define FLASH_ENABLE true
+#define FLASH_ENABLE false
 
 #include "credentials.h"
 

@@ -12,21 +12,36 @@ String listDirectory( File path ) {
   String webText;
   int numPic = 0;
 
-  webText = "<!DOCTYPE html><html>\n";
-  webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
+  webText = "<!DOCTYPE html><html>";
+  webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<style>";
+  webText += "table, th, td { border: 1px solid black; border-collapse: collapse; }";
+  webText += "th, td { padding: 4px }";
+  webText += "</style>";
   webText += "<body>";
+  webText += "<table style=\"width:100%\">";
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
-      webText += "<a href=\"" + linkName + "\">" + linkName + "</a><br>";
+      webText += "<tr>";
+      webText += "<td><a href=\"" + linkName + "\">" + linkName + "</a></td>";
+      webText += "<td align=\"center\">";
+      if( linkName.endsWith( ".jpg" ) ) {
+        webText += "X";
+      } else {
+        webText += "DIR";
+      }
+      webText += "</td>";
+      webText += "</tr>";
       file = path.openNextFile();
       numPic++;
     }
-    webText += "Number of entries - " + String( numPic ) + "<br>";
-    webText += "</body>";
-    webText += "</html>";
   }
+  webText += "</table>";
+  webText += "Number of entries - " + String( numPic );
+  webText += "</body>";
+  webText += "</html>";
   return webText;
 
 }
