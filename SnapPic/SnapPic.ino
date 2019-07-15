@@ -15,12 +15,12 @@
 #include <Ticker.h>
 #include <ArduinoOTA.h>
 #include <time.h>
+#include <SPIFFS.h>
 #include <FS.h>
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.21"
-
+#define SW_VERSION "1.01.22"
 #define AI_CAM_SERIAL "3"
 
 // Select camera model
@@ -33,7 +33,8 @@
 #include "camera_pins.h"
 // DATA1 / Flash LED - PIN4
 #define FLASH_LED 4
-#define FLASH_ENABLE false
+#define FLASH_ENABLE true
+bool flashEnable = false;
 
 #include "credentials.h"
 
@@ -41,6 +42,7 @@ long timeZone = 1;
 byte daySaveTime = 1;
 struct tm tmstruct;
 
+int waitTime = 60;
 char elapsedTimeString[40];
 char currentDateTime[17];
 
@@ -49,7 +51,6 @@ WebServer webServer(80);
 AsyncWebServer asyncWebServer(8080);
 
 Ticker tickerSnapPic;
-#define WAITTIME 60
 boolean tickerFired;
 
 void flagSnapPicTicker( void ) {
@@ -339,12 +340,38 @@ void initCam( void ) {
 //  Serial.println( "Framesize SVGA - 800x600" );
   s->set_framesize( s, FRAMESIZE_XGA );
   Serial.println( "Framesize XGA - 1024x768" );
+//  s->set_framesize( s, FRAMESIZE_SXGA );
+//  Serial.println( "Framesize SXGA - 1280x1024" );
+// TODO - FIXME - move this to #define at top
+
+/*
+typedef enum {
+    FRAMESIZE_QQVGA,    // 160x120
+    FRAMESIZE_QQVGA2,   // 128x160
+    FRAMESIZE_QCIF,     // 176x144
+    FRAMESIZE_HQVGA,    // 240x176
+    FRAMESIZE_QVGA,     // 320x240
+    FRAMESIZE_CIF,      // 400x296
+    FRAMESIZE_VGA,      // 640x480
+    FRAMESIZE_SVGA,     // 800x600
+    FRAMESIZE_XGA,      // 1024x768
+    FRAMESIZE_SXGA,     // 1280x1024
+    FRAMESIZE_UXGA,     // 1600x1200
+    FRAMESIZE_QXGA,     // 2048*1536
+    FRAMESIZE_INVALID
+} framesize_t;
+ */
 
 }
 
 void flashON( void ) {
 
+// global settings - ignoring html on/off
   if( !FLASH_ENABLE )
+    return;
+
+// html switch on/off
+  if( !flashEnable )
     return;
 
   pinMode( FLASH_LED, OUTPUT );
@@ -353,6 +380,8 @@ void flashON( void ) {
 }
 
 void flashOFF( void ) {
+
+// turn off AI-Thinker Board Flash LED
 
 //  if( !FLASH_ENABLE )
 //    return;
@@ -363,19 +392,15 @@ void flashOFF( void ) {
 // DATA1 / Flash LED - PIN4
 // turn off AI-Thinker Board Flash LED
 // FIXME - findout if pinMode OUTPUT makes any problems here
-//  pinMode( 4, OUTPUT );
-//  digitalWrite( 4, LOW );
 //  // rtc_gpio_hold_en( GPIO_NUM_4 );
-//  // FIXME - findout if pinMode OUTPUT makes any problems here
 //  pinMode( FLASH_LED, OUTPUT );
-//  // turn off AI-Thinker Board Flash LED
 //  digitalWrite( FLASH_LED, LOW );
 
 }
 
 void doSnapPic( void ) {
 
-  File picFileP;
+  File picFile;
   String picFileDir;
   String picFileName;
   camera_fb_t * picFrameBuffer = NULL;
@@ -402,8 +427,8 @@ void doSnapPic( void ) {
   picFileName = picFileDir + String( "/PIC-" ) + currentDateTime + String( ".jpg" ) ;
   Serial.println( picFileName );
 
-  picFileP = SD_MMC.open( picFileName, FILE_WRITE );
-  if( !picFileP ) {
+  picFile = SD_MMC.open( picFileName, FILE_WRITE );
+  if( !picFile ) {
     Serial.println( "error opening file for picture" );
   }
 
@@ -419,13 +444,13 @@ void doSnapPic( void ) {
   Serial.print( "Picture length : " );
   Serial.println( picFrameLength );
 
-  picFileP.write( picFrameBuffer->buf, picFrameLength );
+  picFile.write( picFrameBuffer->buf, picFrameLength );
 //  Serial.println( "Wrote file .." );
 
   //return the frame buffer back to the driver for reuse
   esp_camera_fb_return( picFrameBuffer );
 
-  picFileP.close();
+  picFile.close();
 
   Serial.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
   Serial.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
@@ -441,6 +466,10 @@ void setup() {
   Serial.println();
 
   prnEspStats();
+
+  if( !SPIFFS.begin() ) {
+    Serial.println( "An Error has occurred while mounting SPIFFS" );
+  }
 
   delay( 10 );
   initWiFi();
@@ -459,7 +488,7 @@ void setup() {
 
   initAsyncWebServer();
 
-  tickerSnapPic.attach( WAITTIME, flagSnapPicTicker );
+  tickerSnapPic.attach( waitTime, flagSnapPicTicker );
   tickerFired = true;
 
 }

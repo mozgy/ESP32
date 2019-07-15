@@ -19,14 +19,14 @@ String listDirectory( File path ) {
   webText += "th, td { padding: 4px }";
   webText += "</style>";
   webText += "<body>";
-  webText += "<table style=\"width:100%\">";
+  webText += "<table style='width:100%'>";
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
       webText += "<tr>";
-      webText += "<td><a href=\"" + linkName + "\">" + linkName + "</a></td>";
-      webText += "<td align=\"center\">";
+      webText += "<td><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<td align='center'>";
       if( linkName.endsWith( ".jpg" ) ) {
         webText += "X";
       } else {
@@ -81,13 +81,41 @@ bool loadFromSDCard( String path ) {
 
 }
 
+void handleInput( void ) {
+
+  String arg1;
+  String arg2;
+  String webText;
+
+
+  arg1 = webServer.arg( "onoffswitch" );
+  arg2 = webServer.arg( "timePeriod" );
+
+  Serial.print( "Got arguments - " );
+  Serial.print( String( arg1 ) );
+  Serial.print( " - " );
+  Serial.print( String( arg2 ) );
+  Serial.println( " - !" );
+
+  if( arg1 == "on" )
+    flashEnable = true;
+  else
+    flashEnable = false;
+
+//  webText = "<!DOCTYPE html><html><body>Set!<br><a href=\"/\">Back</a>";
+  webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
+  webServer.send( 200, "text/html", webText );
+
+}
+
 void handleRoot( void ) {
 
   String webText;
   char tmpStr[20];
 
-  webText = "<!DOCTYPE html><html>\n";
-  webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
+  webText = "<!DOCTYPE html><html>";
+  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
+  webText += "<link rel='stylesheet' type='text/css' href='onoffswitch.css'></head>";
   webText += "<body>";
   webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
@@ -95,12 +123,29 @@ void handleRoot( void ) {
   webText += String( elapsedTimeString ) + "<br>";
   sprintf( tmpStr, "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr ) + "<p>";
-  webText += "<a href=/snaps>Pictures</a><br>";
+  webText += "<form action='/set'><div class='onoffswitch'>";
+  webText += "<input type='checkbox' name='onoffswitch' class='onoffswitch-checkbox' id='myonoffswitch'";
+  if( flashEnable )
+    webText += " checked";
+  webText += ">";
+  webText += "<label class='onoffswitch-label' for='myonoffswitch'>";
+  webText += "<span class='onoffswitch-inner'></span><span class='onoffswitch-switch'></span>";
+  webText += "</label>";
+  webText += "</div>";
+  webText += "<p><div>";
+  webText += "  <label for='timePeriod'>Time Period -</label>";
+  webText += "  <input id='timePeriod' type='number' name='timePeriod' min='10' max='600' step='10' value='";
+  webText += String( waitTime );
+  webText += "'>";
+  webText += "  <input type='submit' value='Set'>";
+  webText += "</div></form>";
+  webText += "<p><p><p><a href=/snaps>Pictures</a><p>";
   webText += "</body>";
   webText += "</html>";
 
   webServer.send( 200, "text/html", webText ); // TODO - make me pwetty !
 
+// placeholder=\"multiple of 10\"
 }
 
 void handleJSonList( void ) {
@@ -163,11 +208,19 @@ void handleNotFound( void ) {
 
 void initWebServer( void ) {
 
-  webServer.on( "/", handleRoot );
+  webServer.on( "/", HTTP_GET, handleRoot );
 
-  webServer.on( "/json", handleJSonList );
+  webServer.on( "/onoffswitch.css", HTTP_GET, []() {
+    File dataFile = SPIFFS.open( "/onoffswitch.css", "r" );
+    webServer.streamFile( dataFile, "text/css" );
+    dataFile.close();
+  });
 
-  webServer.on( "/snaps", handlePictures );
+  webServer.on( "/set", HTTP_GET, handleInput );
+
+  webServer.on( "/json", HTTP_GET, handleJSonList );
+
+  webServer.on( "/snaps", HTTP_GET, handlePictures );
 
   webServer.onNotFound( handleNotFound );
 /*
@@ -269,6 +322,9 @@ void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, [](AsyncWebServerRequest *request ){
     request->send(200, "text/plain", "Hello, world");
+  });
+  asyncWebServer.on( "/onoffswitch.css", HTTP_GET, [](AsyncWebServerRequest *request ){
+    request->send( SPIFFS, "/onoffswitch.css", "text/css" );
   });
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
