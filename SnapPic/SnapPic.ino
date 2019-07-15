@@ -20,7 +20,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.22"
+#define SW_VERSION "1.01.23"
 #define AI_CAM_SERIAL "3"
 
 // Select camera model
@@ -35,6 +35,7 @@
 #define FLASH_LED 4
 #define FLASH_ENABLE true
 bool flashEnable = false;
+framesize_t picSnapSize = FRAMESIZE_XGA;
 
 #include "credentials.h"
 
@@ -42,7 +43,6 @@ long timeZone = 1;
 byte daySaveTime = 1;
 struct tm tmstruct;
 
-int waitTime = 60;
 char elapsedTimeString[40];
 char currentDateTime[17];
 
@@ -52,6 +52,8 @@ AsyncWebServer asyncWebServer(8080);
 
 Ticker tickerSnapPic;
 boolean tickerFired;
+int waitTime = 60;
+int oldTickerValue;
 
 void flagSnapPicTicker( void ) {
   tickerFired = true;
@@ -490,6 +492,7 @@ void setup() {
 
   tickerSnapPic.attach( waitTime, flagSnapPicTicker );
   tickerFired = true;
+  oldTickerValue = waitTime;
 
 }
 
@@ -503,6 +506,11 @@ void loop() {
     doSnapPic();
     ElapsedStr( elapsedTimeString );
     Serial.println( elapsedTimeString );
+    if( oldTickerValue != waitTime ) {
+      tickerSnapPic.detach( );
+      tickerSnapPic.attach( waitTime, flagSnapPicTicker );
+      oldTickerValue = waitTime;
+    }
   }
 
   if( WiFi.status() != WL_CONNECTED ) {

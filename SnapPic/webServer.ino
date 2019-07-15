@@ -85,16 +85,19 @@ void handleInput( void ) {
 
   String arg1;
   String arg2;
+  String arg3;
   String webText;
 
-
   arg1 = webServer.arg( "onoffswitch" );
-  arg2 = webServer.arg( "timePeriod" );
+  arg2 = webServer.arg( "picSize" );
+  arg3 = webServer.arg( "timePeriod" );
 
   Serial.print( "Got arguments - " );
   Serial.print( String( arg1 ) );
   Serial.print( " - " );
   Serial.print( String( arg2 ) );
+  Serial.print( " - " );
+  Serial.print( String( arg3 ) );
   Serial.println( " - !" );
 
   if( arg1 == "on" )
@@ -102,7 +105,8 @@ void handleInput( void ) {
   else
     flashEnable = false;
 
-//  webText = "<!DOCTYPE html><html><body>Set!<br><a href=\"/\">Back</a>";
+  waitTime = arg3.toInt();
+
   webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
   webServer.send( 200, "text/html", webText );
 
@@ -114,15 +118,31 @@ void handleRoot( void ) {
   char tmpStr[20];
 
   webText = "<!DOCTYPE html><html>";
-  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>\n";
-  webText += "<link rel='stylesheet' type='text/css' href='onoffswitch.css'></head>";
+  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title></head>";
   webText += "<body>";
   webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   ElapsedStr( elapsedTimeString );
   webText += String( elapsedTimeString ) + "<br>";
   sprintf( tmpStr, "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
-  webText += String( tmpStr ) + "<p>";
+  webText += String( tmpStr );
+  webText += "<p><a href=/setup>Setup</a>";
+  webText += "<p><a href=/snaps>Pictures</a>";
+  webText += "</body>";
+  webText += "</html>";
+
+  webServer.send( 200, "text/html", webText ); // TODO - make me pwetty !
+
+}
+
+void handleSettings( void ) {
+
+  String webText;
+  char tmpStr[20];
+
+  webText = "<!DOCTYPE html><html>";
+  webText += "<head><link rel='stylesheet' type='text/css' href='onoffswitch.css'></head>";
+  webText += "<body>Camera Setup<p>";
   webText += "<form action='/set'><div class='onoffswitch'>";
   webText += "<input type='checkbox' name='onoffswitch' class='onoffswitch-checkbox' id='myonoffswitch'";
   if( flashEnable )
@@ -132,19 +152,44 @@ void handleRoot( void ) {
   webText += "<span class='onoffswitch-inner'></span><span class='onoffswitch-switch'></span>";
   webText += "</label>";
   webText += "</div>";
+  webText += "<p>Picture Size - <select name='picSize'>";
+  webText += "  <option value='FRAMESIZE_QVGA'>320x240</option>";
+  webText += "  <option value='FRAMESIZE_VGA'>640x480</option>";
+  webText += "  <option value='FRAMESIZE_SVGA'>800x600</option>";
+  webText += "  <option value='FRAMESIZE_XGA'>1024x768</option>";
+  webText += "  <option value='FRAMESIZE_SXGA'>1280x1024</option>";
+  webText += "  <option value='FRAMESIZE_UXGA'>1600x1200</option>";
+  webText += "</select>";
   webText += "<p><div>";
-  webText += "  <label for='timePeriod'>Time Period -</label>";
-  webText += "  <input id='timePeriod' type='number' name='timePeriod' min='10' max='600' step='10' value='";
+  webText += "<label for='timePeriod'>Time Period - </label>";
+  webText += "<input id='timePeriod' type='number' name='timePeriod' min='10' max='600' step='10' value='";
   webText += String( waitTime );
   webText += "'>";
-  webText += "  <input type='submit' value='Set'>";
-  webText += "</div></form>";
-  webText += "<p><p><p><a href=/snaps>Pictures</a><p>";
+  webText += "<input type='submit' value='Set'>";
+  webText += "</div>";
+  webText += "</form>";
   webText += "</body>";
   webText += "</html>";
 
-  webServer.send( 200, "text/html", webText ); // TODO - make me pwetty !
+  webServer.send( 200, "text/html", webText ); // TODO - make me vewy pwetty !
 
+/*
+typedef enum {
+    FRAMESIZE_QQVGA,    // 160x120
+    FRAMESIZE_QQVGA2,   // 128x160
+    FRAMESIZE_QCIF,     // 176x144
+    FRAMESIZE_HQVGA,    // 240x176
+    FRAMESIZE_QVGA,     // 320x240
+    FRAMESIZE_CIF,      // 400x296
+    FRAMESIZE_VGA,      // 640x480
+    FRAMESIZE_SVGA,     // 800x600
+    FRAMESIZE_XGA,      // 1024x768
+    FRAMESIZE_SXGA,     // 1280x1024
+    FRAMESIZE_UXGA,     // 1600x1200
+    FRAMESIZE_QXGA,     // 2048*1536
+    FRAMESIZE_INVALID
+} framesize_t;
+ */
 // placeholder=\"multiple of 10\"
 }
 
@@ -216,10 +261,9 @@ void initWebServer( void ) {
     dataFile.close();
   });
 
-  webServer.on( "/set", HTTP_GET, handleInput );
-
   webServer.on( "/json", HTTP_GET, handleJSonList );
-
+  webServer.on( "/setup", HTTP_GET, handleSettings );
+  webServer.on( "/set", HTTP_GET, handleInput );
   webServer.on( "/snaps", HTTP_GET, handlePictures );
 
   webServer.onNotFound( handleNotFound );
@@ -280,6 +324,25 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
 }
 
+void asyncHandleInput( AsyncWebServerRequest *request ) {
+
+//  String arg1;
+//  String arg2;
+  String webText;
+
+//  arg1 = webServer.arg( "onoffswitch" );
+//  arg2 = webServer.arg( "timePeriod" );
+
+//  if( arg1 == "on" )
+//    flashEnable = true;
+//  else
+//    flashEnable = false;
+
+  webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
+  request->send( 200, "text/html", webText );
+
+}
+
 void asyncHandlePictures( AsyncWebServerRequest *request ) {
 
   File picDir;
@@ -326,6 +389,7 @@ void initAsyncWebServer( void ) {
   asyncWebServer.on( "/onoffswitch.css", HTTP_GET, [](AsyncWebServerRequest *request ){
     request->send( SPIFFS, "/onoffswitch.css", "text/css" );
   });
+  asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 
