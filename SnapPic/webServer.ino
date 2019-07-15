@@ -105,6 +105,34 @@ void handleInput( void ) {
   else
     flashEnable = false;
 
+  if( arg2 == "FRAMESIZE_QQVGA" ) {
+    picSnapSize = FRAMESIZE_QQVGA;
+  } else if( arg2 == "FRAMESIZE_QQVGA2" ) {
+    picSnapSize = FRAMESIZE_QQVGA2;
+  } else if( arg2 == "FRAMESIZE_QCIF" ) {
+    picSnapSize = FRAMESIZE_QCIF;
+  } else if( arg2 == "FRAMESIZE_HQVGA" ) {
+    picSnapSize = FRAMESIZE_HQVGA;
+  } else if( arg2 == "FRAMESIZE_QVGA" ) {
+    picSnapSize = FRAMESIZE_QVGA;
+  } else if( arg2 == "FRAMESIZE_CIF" ) {
+    picSnapSize = FRAMESIZE_CIF;
+  } else if( arg2 == "FRAMESIZE_VGA" ) {
+    picSnapSize = FRAMESIZE_VGA;
+  } else if( arg2 == "FRAMESIZE_SVGA" ) {
+    picSnapSize = FRAMESIZE_SVGA;
+  } else if( arg2 == "FRAMESIZE_XGA" ) {
+    picSnapSize = FRAMESIZE_XGA;
+  } else if( arg2 == "FRAMESIZE_SXGA" ) {
+    picSnapSize = FRAMESIZE_SXGA;
+  } else if( arg2 == "FRAMESIZE_UXGA" ) {
+    picSnapSize = FRAMESIZE_UXGA;
+  } else if( arg2 == "FRAMESIZE_QXGA" ) {
+    picSnapSize = FRAMESIZE_QXGA;
+  }
+  sensor_t * s = esp_camera_sensor_get();
+  s->set_framesize( s, picSnapSize );
+
   waitTime = arg3.toInt();
 
   webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
@@ -124,8 +152,9 @@ void handleRoot( void ) {
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   ElapsedStr( elapsedTimeString );
   webText += String( elapsedTimeString ) + "<br>";
-  sprintf( tmpStr, "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+  sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr );
+  webText += "<br>Time Period " + String( waitTime );
   webText += "<p><a href=/setup>Setup</a>";
   webText += "<p><a href=/snaps>Pictures</a>";
   webText += "</body>";

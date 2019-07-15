@@ -20,7 +20,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.23"
+#define SW_VERSION "1.01.24"
 #define AI_CAM_SERIAL "3"
 
 // Select camera model
@@ -36,6 +36,25 @@
 #define FLASH_ENABLE true
 bool flashEnable = false;
 framesize_t picSnapSize = FRAMESIZE_XGA;
+typedef const String picSizeStrings_t;
+picSizeStrings_t foo[] = {
+  "Framesize QQVGA - 160x120",
+  "Framesize QQVGA2 - 128x160",
+  "Framesize QCIF - 176x144",
+  "Framesize HQVGA - 240x176",
+  "Framesize QVGA - 320x240",
+  "Framesize CIF - 400x296",
+  "Framesize VGA - 640x480",
+  "Framesize SVGA - 800x600",
+  "Framesize XGA - 1024x768",
+  "Framesize SXGA - 1280x1024",
+  "Framesize UXGA - 1600x1200",
+  "Framesize QXGA - 2048x1536"
+};
+//typedef struct{
+//  framesize_t picFrameSize;
+//  String picVerboseDef;
+//} picsize_t;
 
 #include "credentials.h"
 
@@ -336,16 +355,9 @@ void initCam( void ) {
 //  //drop down frame size for higher initial frame rate
 //  s->set_framesize( s, FRAMESIZE_QVGA );
 //  Serial.println( "Framesize QVGA" );
-//
 //  s->set_vflip( s, 1 );
-//  s->set_framesize( s, FRAMESIZE_SVGA );
-//  Serial.println( "Framesize SVGA - 800x600" );
-  s->set_framesize( s, FRAMESIZE_XGA );
-  Serial.println( "Framesize XGA - 1024x768" );
-//  s->set_framesize( s, FRAMESIZE_SXGA );
-//  Serial.println( "Framesize SXGA - 1280x1024" );
-// TODO - FIXME - move this to #define at top
-
+//
+  s->set_framesize( s, picSnapSize );
 /*
 typedef enum {
     FRAMESIZE_QQVGA,    // 160x120
@@ -378,6 +390,7 @@ void flashON( void ) {
 
   pinMode( FLASH_LED, OUTPUT );
   digitalWrite( FLASH_LED, HIGH );
+  Serial.println( "Flash is ON, smile!" );
 
 }
 
@@ -472,6 +485,7 @@ void setup() {
   if( !SPIFFS.begin() ) {
     Serial.println( "An Error has occurred while mounting SPIFFS" );
   }
+  // // SPIFFS.format(); // BONGA ???
 
   delay( 10 );
   initWiFi();
@@ -511,6 +525,8 @@ void loop() {
       tickerSnapPic.attach( waitTime, flagSnapPicTicker );
       oldTickerValue = waitTime;
     }
+    Serial.print( "Frame size set at - " );
+    Serial.println( foo[picSnapSize] );
   }
 
   if( WiFi.status() != WL_CONNECTED ) {
