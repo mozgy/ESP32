@@ -12,21 +12,28 @@ String listDirectory( File path ) {
   String webText;
   int numPic = 0;
 
-  webText = "<!DOCTYPE html><html>";
+  webText = "<!DOCTYPE html><html><head>";
   webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
-  webText += "<style>";
-  webText += "table, th, td { border: 1px solid black; border-collapse: collapse; }";
-  webText += "th, td { padding: 4px }";
-  webText += "</style>";
+  webText += "<meta charset='UTF-8'>";
+  webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<link rel='stylesheet' type='text/css' href='main.css'>";
+  webText += "<link rel='stylesheet' type='text/css' href='util.css'>";
+  webText += "<link rel='stylesheet' type='text/css' href='ps.css'>";
+  webText += "</head>";
   webText += "<body>";
-  webText += "<table style='width:100%'>";
+  webText += "<div class='limiter'>";
+  webText += "<div class='container-table100'>";
+  webText += "<div class='wrap-table100'>";
+  webText += "<div class='table100 ver5 m-b-110'>";
+  webText += "<div class='table100-body js-pscroll'>";
+  webText += "<table>";
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
-      webText += "<tr>";
-      webText += "<td><a href='" + linkName + "'>" + linkName + "</a></td>";
-      webText += "<td align='center'>";
+      webText += "<tr class='row100 body'>";
+      webText += "<td class='cell100 column1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<td class='cell100 column5'>";
       if( linkName.endsWith( ".jpg" ) ) {
         webText += "X";
       } else {
@@ -39,7 +46,16 @@ String listDirectory( File path ) {
     }
   }
   webText += "</table>";
+  webText += "</div>";
+  webText += "</div>";
+  webText += "</div>";
+  webText += "</div>";
+  webText += "</div>";
   webText += "Number of entries - " + String( numPic );
+  webText += "<script src='main.js'></script>";
+  webText += "<script>$('.js-pscroll').each(function(){var ps = new PerfectScrollbar(this);";
+  webText += "$(window).on('resize', function(){ps.update();})});</script>";
+  webText += "<script src='ps.js'></script>";
   webText += "</body>";
   webText += "</html>";
   return webText;
@@ -64,6 +80,7 @@ bool loadFromSDCard( String path ) {
     dataFile.close();
     return true;
   }
+
   if( path.endsWith( ".jpg" ) ) {
     dataType = "image/jpeg";
   }
@@ -164,6 +181,18 @@ void handleRoot( void ) {
 
 }
 
+String fnOptionVGA( char *str1, char *str2 ) {
+
+  String webText;
+
+  webText = "  <option value='";
+  webText += String( str1 ) + "'";
+  if( String( foo[picSnapSize] ) == String ( str1 ) ) {
+    webText += "selected";
+  }
+  webText += ">" + String( str2 ) + "</option>";
+
+}
 void handleSettings( void ) {
 
   String webText;
@@ -185,9 +214,10 @@ void handleSettings( void ) {
   webText += "  <option value='FRAMESIZE_QVGA'>320x240</option>";
   webText += "  <option value='FRAMESIZE_VGA'>640x480</option>";
   webText += "  <option value='FRAMESIZE_SVGA'>800x600</option>";
-  webText += "  <option value='FRAMESIZE_XGA'>1024x768</option>";
+  webText += "  <option value='FRAMESIZE_XGA' selected>1024x768</option>";
   webText += "  <option value='FRAMESIZE_SXGA'>1280x1024</option>";
   webText += "  <option value='FRAMESIZE_UXGA'>1600x1200</option>";
+  webText += "  <option value='FRAMESIZE_QXGA'>2048x1536</option>";
   webText += "</select>";
   webText += "<p><div>";
   webText += "<label for='timePeriod'>Time Period - </label>";
@@ -242,7 +272,7 @@ void handleJSonList( void ) {
     }
   }
   webText += "]";
-  webServer.send( 200, "text/json", webText );
+  webServer.send( 200, "application/json", webText );
   picDir.close();
 
 }
@@ -261,12 +291,14 @@ void handlePictures( void ) {
 
 void handleNotFound( void ) {
 
-  if( loadFromSDCard( webServer.uri() ) ) {
-    return;
-  }
+  String path = webServer.uri();
+  String dataType = "text/plain";
+  String webText;
 
-  String webText = "File Not Found\n\n";
-  webText += "URI: ";
+  int lastSlash = path.lastIndexOf( '/' );
+  String fileName = path.substring( lastSlash, path.length() );
+
+  webText = "URI: ";
   webText += webServer.uri();
   webText += "\nMethod: ";
   webText += ( webServer.method() == HTTP_GET ) ? "GET" : "POST";
@@ -276,6 +308,32 @@ void handleNotFound( void ) {
   for( uint8_t i = 0; i < webServer.args(); i++ ) {
     webText += " " + webServer.argName( i ) + ": " + webServer.arg( i ) + "\n";
   }
+#if _DEBUG_
+  Serial.print( "Basename - " );
+  Serial.println( fileName );
+  Serial.println( webText );
+#endif
+
+  bool fileSPIFFS = false;
+  if( fileName.endsWith( ".css" ) ) {
+    dataType = "text/css";
+    fileSPIFFS = true;
+  } else if( fileName.endsWith( ".js" ) ) {
+    dataType = "aplication/javascript";
+    fileSPIFFS = true;
+  }
+  if( fileSPIFFS ) {
+    File dataFile = SPIFFS.open( fileName.c_str(), "r" );
+    webServer.streamFile( dataFile, dataType );
+    dataFile.close();
+    return;
+  }
+
+  if( loadFromSDCard( path ) ) {
+    return;
+  }
+
+  webText = "File Not Found\n\n" + webText;
   webServer.send( 404, "text/plain", webText );
 
 }
@@ -284,11 +342,24 @@ void initWebServer( void ) {
 
   webServer.on( "/", HTTP_GET, handleRoot );
 
+/*
+// TODO - put this in handleNotFound ?!
   webServer.on( "/onoffswitch.css", HTTP_GET, []() {
     File dataFile = SPIFFS.open( "/onoffswitch.css", "r" );
     webServer.streamFile( dataFile, "text/css" );
     dataFile.close();
   });
+  webServer.on( "/mozz.css", HTTP_GET, []() {
+    File dataFile = SPIFFS.open( "/mozz.css", "r" );
+    webServer.streamFile( dataFile, "text/css" );
+    dataFile.close();
+  });
+  webServer.on( "/util.css", HTTP_GET, []() {
+    File dataFile = SPIFFS.open( "/util.css", "r" );
+    webServer.streamFile( dataFile, "text/css" );
+    dataFile.close();
+  });
+ */
 
   webServer.on( "/json", HTTP_GET, handleJSonList );
   webServer.on( "/setup", HTTP_GET, handleSettings );
@@ -422,7 +493,6 @@ void initAsyncWebServer( void ) {
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 
-/*
 //First request will return 0 results unless you start scan from somewhere else (loop/setup)
 //Do not request more often than 3-5 seconds
 asyncWebServer.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -439,7 +509,7 @@ asyncWebServer.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
       json += ",\"bssid\":\""+WiFi.BSSIDstr(i)+"\"";
       json += ",\"channel\":"+String(WiFi.channel(i));
       json += ",\"secure\":"+String(WiFi.encryptionType(i));
-      json += ",\"hidden\":"+String(WiFi.isHidden(i)?"true":"false");
+//      json += ",\"hidden\":"+String(WiFi.isHidden(i)?"true":"false");
       json += "}";
     }
     WiFi.scanDelete();
@@ -451,8 +521,28 @@ asyncWebServer.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
   request->send(200, "application/json", json);
   json = String();
 });
- */
 
   asyncWebServer.begin();
 
 }
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+            <style>";
+  webText += "table, th, td { border: 1px solid black; border-collapse: collapse; }";
+  webText += "th, td { padding: 4px }";
+  webText += "tr:hover { background-color: #f9f9f9; }";
+  webText += "</style>
+
+ */

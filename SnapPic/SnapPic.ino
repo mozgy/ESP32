@@ -20,7 +20,9 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.24"
+#define _DEBUG_ true
+
+#define SW_VERSION "1.01.25"
 #define AI_CAM_SERIAL "3"
 
 // Select camera model
@@ -174,6 +176,8 @@ WiFi.onEvent([](system_event_id_t event) {
   WiFi.begin();
 }, SYSTEM_EVENT_STA_LOST_IP);
  */
+
+  WiFi.scanNetworks(true);
 
 }
 
