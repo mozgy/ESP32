@@ -415,7 +415,9 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 //  if( request->hasParam( "download" ) ) dataType = "application/octet-stream";
 //  response->addHeader("Content-Encoding", "gzip");
 
-  request->send( dataFile, path.c_str(), dataType );
+  // request->send( dataFile, path.c_str(), dataType );
+  request->send( SD_MMC, path.c_str(), String(), true );
+  // request->send(SPIFFS, "/index.htm", String(), true);
 
   dataFile.close();
 
@@ -458,14 +460,13 @@ void asyncHandlePictures( AsyncWebServerRequest *request ) {
 void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 
   String path = request->url();
+  String dataType = "text/plain";
+  String webText;
 
-  // TODO - no index.html here, just plain dir listing
-  if( loadFromSDCard( request ) ) {
-    return;
-  }
+  int lastSlash = path.lastIndexOf( '/' );
+  String fileName = path.substring( lastSlash, path.length() );
 
-  String webText = "\nNo Handler\r\n";
-  webText += "URI: ";
+  webText = "URI: ";
   webText += request->url();
   webText += "\nMethod: ";
   webText += ( request->method() == HTTP_GET ) ? "GET" : "POST";
@@ -476,6 +477,31 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     AsyncWebParameter* p = request->getParam( i );
     webText += String( p->name().c_str() ) + " : " + String( p->value().c_str() ) + "\r\n";
   }
+
+  Serial.print( "Basename - " );
+  Serial.println( fileName );
+  Serial.println( webText );
+
+  bool fileSPIFFS = false;
+  if( fileName.endsWith( ".css" ) ) {
+    dataType = "text/css";
+    fileSPIFFS = true;
+  } else if( fileName.endsWith( ".js" ) ) {
+    dataType = "aplication/javascript";
+    fileSPIFFS = true;
+  }
+  if( fileSPIFFS ) {
+    File dataFile = SPIFFS.open( fileName.c_str(), "r" );
+    webServer.streamFile( dataFile, dataType );
+    dataFile.close();
+    return;
+  }
+
+  if( loadFromSDCard( request ) ) {
+    return;
+  }
+
+  webText = "\nNo Handler\r\n" + webText;
   request->send( 404, "text/plain", webText );
   Serial.println( webText );
 
