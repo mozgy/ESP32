@@ -22,7 +22,7 @@
 
 #define _DEBUG_ true
 
-#define SW_VERSION "1.01.25"
+#define SW_VERSION "1.01.26"
 #define AI_CAM_SERIAL "3"
 
 // Select camera model

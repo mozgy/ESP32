@@ -16,26 +16,26 @@ String listDirectory( File path ) {
   webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
   webText += "<meta charset='UTF-8'>";
   webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-  webText += "<link rel='stylesheet' type='text/css' href='main.css'>";
-  webText += "<link rel='stylesheet' type='text/css' href='util.css'>";
-  webText += "<link rel='stylesheet' type='text/css' href='ps.css'>";
+  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'>";
+//  webText += "<link rel='stylesheet' type='text/css' href='util.css'>";
+//  webText += "<link rel='stylesheet' type='text/css' href='ps.css'>";
   webText += "</head>";
   webText += "<body>";
   webText += "<div class='limiter'>";
-  webText += "<div class='container-table100'>";
-  webText += "<div class='wrap-table100'>";
-  webText += "<div class='table100 ver5 m-b-110'>";
-  webText += "<div class='table100-body js-pscroll'>";
-  webText += "<table>";
+  webText += "<div class='container-tableCam'>";
+  webText += "<div class='wrap-tableCam'>";
+  webText += "<div class='tableCam m-b-110'>";
+  webText += "<div class='tableCam-body'>";
+  webText += "<table><tbody>";
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
-      webText += "<tr class='row100 body'>";
-      webText += "<td class='cell100 column1'><a href='" + linkName + "'>" + linkName + "</a></td>";
-      webText += "<td class='cell100 column5'>";
+      webText += "<tr>";
+      webText += "<td class='column1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<td class='column2'>";
       if( linkName.endsWith( ".jpg" ) ) {
-        webText += "X";
+        webText += "<a href='/delete&" + linkName + "'>X</a>";
       } else {
         webText += "DIR";
       }
@@ -45,17 +45,21 @@ String listDirectory( File path ) {
       numPic++;
     }
   }
-  webText += "</table>";
+  webText += "</tbody></table></div>";
+  webText += "<div class='tableCam-foot'><table><tfoot>";
+  webText += "<tr><th colspan='2'>Number of entries - " + String( numPic ) + "</th></tr>";
+  webText += "</tfoot></table>";
   webText += "</div>";
   webText += "</div>";
   webText += "</div>";
   webText += "</div>";
   webText += "</div>";
-  webText += "Number of entries - " + String( numPic );
+/*
   webText += "<script src='main.js'></script>";
   webText += "<script>$('.js-pscroll').each(function(){var ps = new PerfectScrollbar(this);";
   webText += "$(window).on('resize', function(){ps.update();})});</script>";
   webText += "<script src='ps.js'></script>";
+ */
   webText += "</body>";
   webText += "</html>";
   return webText;
