@@ -405,7 +405,7 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
     return false;
   }
 
-// NO index.html handling for '/' - maybe TODO later
+// NO index.html handling for '/' - maybe TODO later - HTML stuff is on SPIFFS
   if( dataFile.isDirectory() ) {
     webText = listDirectory( dataFile );
     request->send( 200, "text/html", webText );
@@ -414,27 +414,19 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   }
   if( path.endsWith( ".jpg" ) ) {
     dataType = "image/jpeg";
+    request->send( SD_MMC, path.c_str(), String(), true );
+    dataFile.close();
+    return true;
   }
 
-// void send(File content, const String& path, const String& contentType=String(), bool download=false, AwsTemplateProcessor callback=nullptr);
-//  if( request->hasParam( "download" ) ) dataType = "application/octet-stream";
-//  response->addHeader("Content-Encoding", "gzip");
-
-  // request->send( dataFile, path.c_str(), dataType );
-  request->send( SD_MMC, path.c_str(), String(), true );
-  // request->send(SPIFFS, "/index.htm", String(), true);
-
-  dataFile.close();
-
   return false;
-  return true;
 
 }
 
 void asyncHandleRoot( AsyncWebServerRequest *request ) {
 
   String webText = getHTMLRootText();
-  webServer.send( 200, "text/html", webText );
+  request->send( 200, "text/html", webText );
 
 }
 
@@ -503,9 +495,7 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     fileSPIFFS = true;
   }
   if( fileSPIFFS ) {
-    File dataFile = SPIFFS.open( fileName.c_str(), "r" );
-    webServer.streamFile( dataFile, dataType );
-    dataFile.close();
+    request->send( SPIFFS, fileName.c_str(), "text/css" );
     return;
   }
 
@@ -522,12 +512,6 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
-  asyncWebServer.on( "/onoffswitch.css", HTTP_GET, [](AsyncWebServerRequest *request ){
-    request->send( SPIFFS, "/onoffswitch.css", "text/css" );
-  });
-  asyncWebServer.on( "/mozz.css", HTTP_GET, [](AsyncWebServerRequest *request ){
-    request->send( SPIFFS, "/mozz.css", "text/css" );
-  });
   asyncWebServer.on( "/setup", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
@@ -564,24 +548,3 @@ asyncWebServer.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
   asyncWebServer.begin();
 
 }
-
-/*
-
-
-
-
-
-
-
-
-
-
-
-
-            <style>";
-  webText += "table, th, td { border: 1px solid black; border-collapse: collapse; }";
-  webText += "th, td { padding: 4px }";
-  webText += "tr:hover { background-color: #f9f9f9; }";
-  webText += "</style>
-
- */
