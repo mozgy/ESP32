@@ -17,14 +17,12 @@ String listDirectory( File path ) {
   webText += "<meta charset='UTF-8'>";
   webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
   webText += "<link rel='stylesheet' type='text/css' href='mozz.css'>";
-//  webText += "<link rel='stylesheet' type='text/css' href='util.css'>";
-//  webText += "<link rel='stylesheet' type='text/css' href='ps.css'>";
   webText += "</head>";
   webText += "<body>";
   webText += "<div class='limiter'>";
   webText += "<div class='container-tableCam'>";
   webText += "<div class='wrap-tableCam'>";
-  webText += "<div class='tableCam m-b-110'>";
+  webText += "<div class='tableCam'>";
   webText += "<div class='tableCam-body'>";
   webText += "<table><tbody>";
   if( path.isDirectory() ) {
@@ -35,7 +33,7 @@ String listDirectory( File path ) {
       webText += "<td class='column1'><a href='" + linkName + "'>" + linkName + "</a></td>";
       webText += "<td class='column2'>";
       if( linkName.endsWith( ".jpg" ) ) {
-        webText += "<a href='/delete&" + linkName + "'>X</a>";
+        webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
       } else {
         webText += "DIR";
       }
@@ -161,14 +159,17 @@ void handleInput( void ) {
 
 }
 
-void handleRoot( void ) {
+String getHTMLRootText( void ) {
 
   String webText;
   char tmpStr[20];
 
   webText = "<!DOCTYPE html><html>";
-  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title></head>";
-  webText += "<body>";
+  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<meta charset='UTF-8'>";
+  webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<style>body { font-family: 'Comic Sans MS', cursive, sans-serif; }</style>";
+  webText += "</head><body>";
   webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   ElapsedStr( elapsedTimeString );
@@ -181,7 +182,14 @@ void handleRoot( void ) {
   webText += "</body>";
   webText += "</html>";
 
-  webServer.send( 200, "text/html", webText ); // TODO - make me pwetty !
+  return webText; // TODO - make me pwetty !
+
+}
+
+void handleRoot( void ) {
+
+  String webText = getHTMLRootText();
+  webServer.send( 200, "text/html", webText );
 
 }
 
@@ -197,6 +205,7 @@ String fnOptionVGA( char *str1, char *str2 ) {
   webText += ">" + String( str2 ) + "</option>";
 
 }
+
 void handleSettings( void ) {
 
   String webText;
@@ -281,6 +290,24 @@ void handleJSonList( void ) {
 
 }
 
+void handleDeleteSDCardFile( void ) {
+
+  String webText;
+
+  if( webServer.hasArg( "FILENAME" ) ) {
+    String fileName = webServer.arg( "FILENAME" );
+    webText = "About to DELETE - " + String( fileName );
+    Serial.print( "About to DELETE - " );
+    Serial.println( fileName );
+  } else {
+    webText = "Nothing To Do !";
+    Serial.println( "Nothing To Do !" );
+  }
+
+  webServer.send( 200, "text/plain", webText );
+
+}
+
 void handlePictures( void ) {
 
   File picDir;
@@ -312,11 +339,9 @@ void handleNotFound( void ) {
   for( uint8_t i = 0; i < webServer.args(); i++ ) {
     webText += " " + webServer.argName( i ) + ": " + webServer.arg( i ) + "\n";
   }
-#if _DEBUG_
   Serial.print( "Basename - " );
   Serial.println( fileName );
   Serial.println( webText );
-#endif
 
   bool fileSPIFFS = false;
   if( fileName.endsWith( ".css" ) ) {
@@ -345,38 +370,14 @@ void handleNotFound( void ) {
 void initWebServer( void ) {
 
   webServer.on( "/", HTTP_GET, handleRoot );
-
-/*
-// TODO - put this in handleNotFound ?!
-  webServer.on( "/onoffswitch.css", HTTP_GET, []() {
-    File dataFile = SPIFFS.open( "/onoffswitch.css", "r" );
-    webServer.streamFile( dataFile, "text/css" );
-    dataFile.close();
-  });
-  webServer.on( "/mozz.css", HTTP_GET, []() {
-    File dataFile = SPIFFS.open( "/mozz.css", "r" );
-    webServer.streamFile( dataFile, "text/css" );
-    dataFile.close();
-  });
-  webServer.on( "/util.css", HTTP_GET, []() {
-    File dataFile = SPIFFS.open( "/util.css", "r" );
-    webServer.streamFile( dataFile, "text/css" );
-    dataFile.close();
-  });
- */
-
+  webServer.on( "/delete", HTTP_GET, handleDeleteSDCardFile );
   webServer.on( "/json", HTTP_GET, handleJSonList );
-  webServer.on( "/setup", HTTP_GET, handleSettings );
   webServer.on( "/set", HTTP_GET, handleInput );
+  webServer.on( "/setup", HTTP_GET, handleSettings );
   webServer.on( "/snaps", HTTP_GET, handlePictures );
 
+// handleNotFound serves all *.js and *.css files from SPIFFS
   webServer.onNotFound( handleNotFound );
-/*
-  webServer.onNotFound([]() {
-    if ( !handleFileRead( server.uri() ) )
-      server.send( 404, "text/plain", "404: Not Found" );
-  });
- */
 
   webServer.begin();
 
@@ -427,6 +428,13 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
   return false;
   return true;
+
+}
+
+void asyncHandleRoot( AsyncWebServerRequest *request ) {
+
+  String webText = getHTMLRootText();
+  webServer.send( 200, "text/html", webText );
 
 }
 
@@ -513,13 +521,14 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 
 void initAsyncWebServer( void ) {
 
-  asyncWebServer.on( "/", HTTP_GET, [](AsyncWebServerRequest *request ){
-    request->send(200, "text/plain", "Hello, world");
-  });
+  asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
   asyncWebServer.on( "/onoffswitch.css", HTTP_GET, [](AsyncWebServerRequest *request ){
     request->send( SPIFFS, "/onoffswitch.css", "text/css" );
   });
-  asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
+  asyncWebServer.on( "/mozz.css", HTTP_GET, [](AsyncWebServerRequest *request ){
+    request->send( SPIFFS, "/mozz.css", "text/css" );
+  });
+  asyncWebServer.on( "/setup", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 

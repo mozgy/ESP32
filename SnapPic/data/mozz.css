@@ -42,7 +42,7 @@ th, td {
 
 .tableCam-body {
   max-height: 24em;
-	overflow-y: scroll;
+  overflow-y: scroll;
 }
 
 .tableCam-body td {

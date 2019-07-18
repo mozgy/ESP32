@@ -20,9 +20,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define _DEBUG_ true
-
-#define SW_VERSION "1.01.26"
+#define SW_VERSION "1.01.27"
 #define AI_CAM_SERIAL "3"
 
 // Select camera model
