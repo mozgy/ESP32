@@ -4,7 +4,104 @@
 // MIT Licence
 //
 
-/// WebServer Definitions
+String fnOptionVGA( char *str1, char *str2 ) {
+
+  String webText;
+
+  webText = "  <option value='";
+  webText += String( str1 ) + "'";
+  if( String( foo[picSnapSize] ) == String ( str1 ) ) {
+    webText += "selected";
+  }
+  webText += ">" + String( str2 ) + "</option>";
+
+  return webText;
+
+}
+
+String getHTMLRootText( void ) {
+
+  String webText;
+  char tmpStr[20];
+
+  webText = "<!DOCTYPE html><html>";
+  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<meta charset='UTF-8'>";
+  webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<style>body { font-family: 'Comic Sans MS', cursive, sans-serif; }</style>";
+  webText += "</head><body>";
+  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
+  webText += "Software Version " + String( SW_VERSION ) + "<br>";
+  ElapsedStr( elapsedTimeString );
+  webText += String( elapsedTimeString ) + "<br>";
+  sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+  webText += String( tmpStr );
+  webText += "<br>Time Period " + String( waitTime );
+//  webText += "<p><a href=/setup>Setup</a>";
+  webText += "<p><a href=/snaps>Pictures</a>";
+  webText += "</body>";
+  webText += "</html>";
+
+  return webText; // TODO - make me pwetty !
+
+}
+
+String getHTMLSettingsText( void ) {
+
+  String webText;
+
+  webText = "<!DOCTYPE html><html>";
+  webText += "<head><link rel='stylesheet' type='text/css' href='onoffswitch.css'></head>";
+  webText += "<body>Camera Setup<p>";
+  webText += "<form action='/set'><div class='onoffswitch'>";
+  webText += "<input type='checkbox' name='onoffswitch' class='onoffswitch-checkbox' id='myonoffswitch'";
+  if( flashEnable )
+    webText += " checked";
+  webText += ">";
+  webText += "<label class='onoffswitch-label' for='myonoffswitch'>";
+  webText += "<span class='onoffswitch-inner'></span><span class='onoffswitch-switch'></span>";
+  webText += "</label>";
+  webText += "</div>";
+  webText += "<p>Picture Size - <select name='picSize'>";
+  webText += "  <option value='FRAMESIZE_QVGA'>320x240</option>";
+  webText += "  <option value='FRAMESIZE_VGA'>640x480</option>";
+  webText += "  <option value='FRAMESIZE_SVGA'>800x600</option>";
+  webText += "  <option value='FRAMESIZE_XGA' selected>1024x768</option>";
+  webText += "  <option value='FRAMESIZE_SXGA'>1280x1024</option>";
+  webText += "  <option value='FRAMESIZE_UXGA'>1600x1200</option>";
+  webText += "  <option value='FRAMESIZE_QXGA'>2048x1536</option>";
+  webText += "</select>";
+  webText += "<p><div>";
+  webText += "<label for='timePeriod'>Time Period - </label>";
+  webText += "<input id='timePeriod' type='number' name='timePeriod' min='10' max='600' step='10' value='";
+  webText += String( waitTime );
+  webText += "'>";
+  webText += "<input type='submit' value='Set'>";
+  webText += "</div>";
+  webText += "</form>";
+  webText += "</body>";
+  webText += "</html>";
+
+  return webText; // TODO - make me pwetty !
+/*
+typedef enum {
+    FRAMESIZE_QQVGA,    // 160x120
+    FRAMESIZE_QQVGA2,   // 128x160
+    FRAMESIZE_QCIF,     // 176x144
+    FRAMESIZE_HQVGA,    // 240x176
+    FRAMESIZE_QVGA,     // 320x240
+    FRAMESIZE_CIF,      // 400x296
+    FRAMESIZE_VGA,      // 640x480
+    FRAMESIZE_SVGA,     // 800x600
+    FRAMESIZE_XGA,      // 1024x768
+    FRAMESIZE_SXGA,     // 1280x1024
+    FRAMESIZE_UXGA,     // 1600x1200
+    FRAMESIZE_QXGA,     // 2048*1536
+    FRAMESIZE_INVALID
+} framesize_t;
+ */
+// placeholder=\"multiple of 10\"
+}
 
 String listDirectory( File path ) {
 
@@ -47,22 +144,18 @@ String listDirectory( File path ) {
   webText += "<div class='tableCam-foot'><table><tfoot>";
   webText += "<tr><th colspan='2'>Number of entries - " + String( numPic ) + "</th></tr>";
   webText += "</tfoot></table>";
-  webText += "</div>";
-  webText += "</div>";
-  webText += "</div>";
-  webText += "</div>";
-  webText += "</div>";
-/*
-  webText += "<script src='main.js'></script>";
-  webText += "<script>$('.js-pscroll').each(function(){var ps = new PerfectScrollbar(this);";
-  webText += "$(window).on('resize', function(){ps.update();})});</script>";
-  webText += "<script src='ps.js'></script>";
- */
+  webText += "</div>"; // tableCam-foot
+  webText += "</div>"; // tableCam
+  webText += "</div>"; // wrap-tableCam
+  webText += "</div>"; // container-tableCam
+  webText += "</div>"; // limiter
   webText += "</body>";
   webText += "</html>";
   return webText;
 
 }
+
+/// WebServer Definitions
 
 bool loadFromSDCard( String path ) {
 
@@ -159,33 +252,6 @@ void handleInput( void ) {
 
 }
 
-String getHTMLRootText( void ) {
-
-  String webText;
-  char tmpStr[20];
-
-  webText = "<!DOCTYPE html><html>";
-  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
-  webText += "<meta charset='UTF-8'>";
-  webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-  webText += "<style>body { font-family: 'Comic Sans MS', cursive, sans-serif; }</style>";
-  webText += "</head><body>";
-  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
-  webText += "Software Version " + String( SW_VERSION ) + "<br>";
-  ElapsedStr( elapsedTimeString );
-  webText += String( elapsedTimeString ) + "<br>";
-  sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
-  webText += String( tmpStr );
-  webText += "<br>Time Period " + String( waitTime );
-  webText += "<p><a href=/setup>Setup</a>";
-  webText += "<p><a href=/snaps>Pictures</a>";
-  webText += "</body>";
-  webText += "</html>";
-
-  return webText; // TODO - make me pwetty !
-
-}
-
 void handleRoot( void ) {
 
   String webText = getHTMLRootText();
@@ -193,76 +259,11 @@ void handleRoot( void ) {
 
 }
 
-String fnOptionVGA( char *str1, char *str2 ) {
-
-  String webText;
-
-  webText = "  <option value='";
-  webText += String( str1 ) + "'";
-  if( String( foo[picSnapSize] ) == String ( str1 ) ) {
-    webText += "selected";
-  }
-  webText += ">" + String( str2 ) + "</option>";
-
-}
-
 void handleSettings( void ) {
 
-  String webText;
-  char tmpStr[20];
+  String webText = getHTMLSettingsText();
+  webServer.send( 200, "text/html", webText );
 
-  webText = "<!DOCTYPE html><html>";
-  webText += "<head><link rel='stylesheet' type='text/css' href='onoffswitch.css'></head>";
-  webText += "<body>Camera Setup<p>";
-  webText += "<form action='/set'><div class='onoffswitch'>";
-  webText += "<input type='checkbox' name='onoffswitch' class='onoffswitch-checkbox' id='myonoffswitch'";
-  if( flashEnable )
-    webText += " checked";
-  webText += ">";
-  webText += "<label class='onoffswitch-label' for='myonoffswitch'>";
-  webText += "<span class='onoffswitch-inner'></span><span class='onoffswitch-switch'></span>";
-  webText += "</label>";
-  webText += "</div>";
-  webText += "<p>Picture Size - <select name='picSize'>";
-  webText += "  <option value='FRAMESIZE_QVGA'>320x240</option>";
-  webText += "  <option value='FRAMESIZE_VGA'>640x480</option>";
-  webText += "  <option value='FRAMESIZE_SVGA'>800x600</option>";
-  webText += "  <option value='FRAMESIZE_XGA' selected>1024x768</option>";
-  webText += "  <option value='FRAMESIZE_SXGA'>1280x1024</option>";
-  webText += "  <option value='FRAMESIZE_UXGA'>1600x1200</option>";
-  webText += "  <option value='FRAMESIZE_QXGA'>2048x1536</option>";
-  webText += "</select>";
-  webText += "<p><div>";
-  webText += "<label for='timePeriod'>Time Period - </label>";
-  webText += "<input id='timePeriod' type='number' name='timePeriod' min='10' max='600' step='10' value='";
-  webText += String( waitTime );
-  webText += "'>";
-  webText += "<input type='submit' value='Set'>";
-  webText += "</div>";
-  webText += "</form>";
-  webText += "</body>";
-  webText += "</html>";
-
-  webServer.send( 200, "text/html", webText ); // TODO - make me vewy pwetty !
-
-/*
-typedef enum {
-    FRAMESIZE_QQVGA,    // 160x120
-    FRAMESIZE_QQVGA2,   // 128x160
-    FRAMESIZE_QCIF,     // 176x144
-    FRAMESIZE_HQVGA,    // 240x176
-    FRAMESIZE_QVGA,     // 320x240
-    FRAMESIZE_CIF,      // 400x296
-    FRAMESIZE_VGA,      // 640x480
-    FRAMESIZE_SVGA,     // 800x600
-    FRAMESIZE_XGA,      // 1024x768
-    FRAMESIZE_SXGA,     // 1280x1024
-    FRAMESIZE_UXGA,     // 1600x1200
-    FRAMESIZE_QXGA,     // 2048*1536
-    FRAMESIZE_INVALID
-} framesize_t;
- */
-// placeholder=\"multiple of 10\"
 }
 
 void handleJSonList( void ) {
@@ -371,7 +372,7 @@ void initWebServer( void ) {
 
   webServer.on( "/", HTTP_GET, handleRoot );
   webServer.on( "/delete", HTTP_GET, handleDeleteSDCardFile );
-  webServer.on( "/json", HTTP_GET, handleJSonList );
+//  webServer.on( "/json", HTTP_GET, handleJSonList );
   webServer.on( "/set", HTTP_GET, handleInput );
   webServer.on( "/setup", HTTP_GET, handleSettings );
   webServer.on( "/snaps", HTTP_GET, handlePictures );
@@ -426,6 +427,13 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 void asyncHandleRoot( AsyncWebServerRequest *request ) {
 
   String webText = getHTMLRootText();
+  request->send( 200, "text/html", webText );
+
+}
+
+void asyncHandleSetup( AsyncWebServerRequest *request ) {
+
+  String webText = getHTMLSettingsText();
   request->send( 200, "text/html", webText );
 
 }
@@ -512,7 +520,8 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
-  asyncWebServer.on( "/setup", HTTP_GET, asyncHandleInput );
+  asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
+  asyncWebServer.on( "/setup", HTTP_GET, asyncHandleSetup );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 
