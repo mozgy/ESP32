@@ -20,8 +20,10 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.29"
+#define SW_VERSION "1.01.30"
 #define AI_CAM_SERIAL "3"
+
+#define DBG_OUTPUT_PORT Serial
 
 // Select camera model
 //#define CAMERA_MODEL_WROVER_KIT
@@ -57,6 +59,8 @@ picSizeStrings_t foo[] = {
 //} picsize_t;
 
 #include "credentials.h"
+#define WIFI_DISC_DELAY 30000L
+unsigned long wifiWaitTime;
 
 long timeZone = 1;
 byte daySaveTime = 1;
@@ -82,23 +86,24 @@ void prnEspStats( void ) {
 
   uint64_t chipid;
 
-  Serial.println();
-  Serial.printf( "Sketch SW version: %s\n", SW_VERSION );
-  Serial.printf( "Sketch size: %u\n", ESP.getSketchSize() );
-  Serial.printf( "Free size: %u\n", ESP.getFreeSketchSpace() );
-  Serial.printf( "Heap: %u\n", ESP.getFreeHeap() );
-  Serial.printf( "CPU: %uMHz\n", ESP.getCpuFreqMHz() );
-  Serial.printf( "Chip Revision: %u\n", ESP.getChipRevision() );
-  Serial.printf( "SDK: %s\n", ESP.getSdkVersion() );
-//  Serial.printf( "Flash ID: %u\n", ESP.getFlashChipId() );
-  Serial.printf( "Flash Size: %u\n", ESP.getFlashChipSize() );
-  Serial.printf( "Flash Speed: %u\n", ESP.getFlashChipSpeed() );
-//  Serial.printf( "Chip ID: %u\n", ESP.getChipId() );
+  DBG_OUTPUT_PORT.println();
+  DBG_OUTPUT_PORT.printf( "Sketch SW version: %s\n", SW_VERSION );
+  DBG_OUTPUT_PORT.printf( "Sketch size: %u\n", ESP.getSketchSize() );
+  DBG_OUTPUT_PORT.printf( "Free size: %u\n", ESP.getFreeSketchSpace() );
+  DBG_OUTPUT_PORT.printf( "Heap: %u\n", ESP.getFreeHeap() );
+  DBG_OUTPUT_PORT.printf( "CPU: %uMHz\n", ESP.getCpuFreqMHz() );
+  DBG_OUTPUT_PORT.printf( "Chip Revision: %u\n", ESP.getChipRevision() );
+  DBG_OUTPUT_PORT.printf( "SDK: %s\n", ESP.getSdkVersion() );
+//  DBG_OUTPUT_PORT.printf( "Flash ID: %u\n", ESP.getFlashChipId() );
+  DBG_OUTPUT_PORT.printf( "Flash Size: %u\n", ESP.getFlashChipSize() );
+  DBG_OUTPUT_PORT.printf( "Flash Speed: %u\n", ESP.getFlashChipSpeed() );
+  DBG_OUTPUT_PORT.printf( "PSRAM Size: %u\n", ESP.getPsramSize() );
+//  DBG_OUTPUT_PORT.printf( "Chip ID: %u\n", ESP.getChipId() );
   chipid=ESP.getEfuseMac(); //The chip ID is essentially its MAC address(length: 6 bytes).
-  Serial.printf( "ESP32 Chip ID = %04X", (uint16_t)(chipid>>32) ); //print High 2 bytes
-  Serial.printf( "%08X\n", (uint32_t)chipid );                     //print Low 4bytes.
-//  Serial.printf( "Vcc: %u\n", ESP.getVcc() );
-  Serial.println();
+  DBG_OUTPUT_PORT.printf( "ESP32 Chip ID = %04X", (uint16_t)(chipid>>32) ); //print High 2 bytes
+  DBG_OUTPUT_PORT.printf( "%08X\n", (uint32_t)chipid );                     //print Low 4bytes.
+//  DBG_OUTPUT_PORT.printf( "Vcc: %u\n", ESP.getVcc() );
+  DBG_OUTPUT_PORT.println();
 
 }
 
@@ -157,13 +162,13 @@ void initWiFi( void ) {
 // FIXME - this could be better!
   waitForConnect( 10 * 1000 );
   while( WiFi.waitForConnectResult() != WL_CONNECTED ) {
-    Serial.println( "Connection Failed! Rebooting..." );
+    DBG_OUTPUT_PORT.println( "Connection Failed! Rebooting..." );
     delay( 5000 );
     ESP.restart();
   }
 // FIXME - this could be better!
 
-  Serial.println( "WiFi connected" );
+  DBG_OUTPUT_PORT.println( "WiFi connected" );
 
 /* SOME ADVICE
 atanisoft@atanisoft17:15
@@ -182,18 +187,18 @@ WiFi.onEvent([](system_event_id_t event) {
 void initOTA( void ) {
 
   // Port defaults to 3232
-  // ArduinoOTA.setPort(3232);
+  // ArduinoOTA.setPort( 3232 );
 
   // Hostname defaults to esp3232-[MAC]
   // add AI_CAM_SERIAL suffix
-  ArduinoOTA.setHostname("mozz-esp32-ai-3");
+  ArduinoOTA.setHostname( "mozz-esp32-ai-3" );
 
   // No authentication by default
-  // ArduinoOTA.setPassword("admin");
+  // ArduinoOTA.setPassword( "admin" );
 
   // Password can be set with it's md5 value as well
   // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+  // ArduinoOTA.setPasswordHash( "21232f297a57a5a743894a0e4a801fc3" );
 
   ArduinoOTA
     .onStart([]() {
@@ -204,21 +209,21 @@ void initOTA( void ) {
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
+      DBG_OUTPUT_PORT.println("Start updating " + type);
     })
     .onEnd([]() {
-      Serial.println("\nEnd");
+      DBG_OUTPUT_PORT.println("\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      DBG_OUTPUT_PORT.printf("Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      DBG_OUTPUT_PORT.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) DBG_OUTPUT_PORT.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) DBG_OUTPUT_PORT.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) DBG_OUTPUT_PORT.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) DBG_OUTPUT_PORT.println("Receive Failed");
+      else if (error == OTA_END_ERROR) DBG_OUTPUT_PORT.println("End Failed");
     });
 
   ArduinoOTA.begin();
@@ -227,19 +232,19 @@ void initOTA( void ) {
 
 void getNTPTime( void ) {
 
-  Serial.println( "Contacting Time Server" );
+  DBG_OUTPUT_PORT.println( "Contacting Time Server" );
 //  configTime( 3600*timeZone, daySaveTime*3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org" );
   configTime( 3600*timeZone, daySaveTime*3600, "tik.t-com.hr", "tak.t-com.hr" );
   delay( 2000 );
   tmstruct.tm_year = 0;
   getLocalTime( &tmstruct, 5000 );
   while( tmstruct.tm_year == 70 ) {
-    Serial.println( "NTP failed, trying again .." );
+    DBG_OUTPUT_PORT.println( "NTP failed, trying again .." );
     // configTime( 3600*timeZone, daySaveTime*3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org" );
     delay( 5000 );
     getLocalTime( &tmstruct, 5000 );
   }
-  Serial.printf( "Now is : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year)+1900, (tmstruct.tm_mon)+1, tmstruct.tm_mday, tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
+  DBG_OUTPUT_PORT.printf( "Now is : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year)+1900, (tmstruct.tm_mon)+1, tmstruct.tm_mday, tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
 
 //  // yes, I know it can be oneliner -
 //  sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
@@ -254,46 +259,37 @@ void initSDCard( void ) {
 
 //  if( !SD_MMC.begin() ) {
   if( !SD_MMC.begin( "/sdcard", true ) ) {
-    Serial.println( "SD card init failed" );
+    DBG_OUTPUT_PORT.println( "SD card init failed" );
     return;
   }
 
   uint8_t cardType = SD_MMC.cardType();
 
   if( cardType == CARD_NONE ){
-    Serial.println( "No SD card attached" );
+    DBG_OUTPUT_PORT.println( "No SD card attached" );
     return;
   }
 
-  Serial.print( "SD Card Type: " );
+  DBG_OUTPUT_PORT.print( "SD Card Type: " );
   if(cardType == CARD_MMC){
-    Serial.println( "MMC" );
+    DBG_OUTPUT_PORT.println( "MMC" );
   } else if(cardType == CARD_SD){
-    Serial.println( "SDSC" );
+    DBG_OUTPUT_PORT.println( "SDSC" );
   } else if(cardType == CARD_SDHC){
-    Serial.println( "SDHC" );
+    DBG_OUTPUT_PORT.println( "SDHC" );
   } else {
-    Serial.println( "UNKNOWN" );
+    DBG_OUTPUT_PORT.println( "UNKNOWN" );
   }
 
   uint64_t cardSize = SD_MMC.cardSize() / ( 1024 * 1024 );
-  Serial.printf( "SD Card Size: %lluMB\n", cardSize );
+  DBG_OUTPUT_PORT.printf( "SD Card Size: %lluMB\n", cardSize );
 
   //  createDir(SD_MMC, "/ai-cam");
   if( !SD_MMC.mkdir( "/ai-cam" ) ) {
-    Serial.println( "DIR exists .." );
+    DBG_OUTPUT_PORT.println( "DIR exists .." );
   }
 
   return;
-
-// FIXME - put SD_MMC stuff in separate file !?
-//  listDir(SD_MMC, "/", 0);
-//  removeDir(SD_MMC, "/mydir");
-//  createDir(SD_MMC, "/mydir");
-//  deleteFile(SD_MMC, "/hello.txt");
-//  writeFile(SD_MMC, "/hello.txt", "Hello ");
-//  appendFile(SD_MMC, "/hello.txt", "World!\n");
-//  listDir(SD_MMC, "/", 0);
 
 }
 
@@ -340,12 +336,12 @@ void initCam( void ) {
   // camera init
   esp_err_t err = esp_camera_init( &config );
   if ( err != ESP_OK ) {
-    Serial.printf( "Camera init failed with error 0x%x", err );
+    DBG_OUTPUT_PORT.printf( "Camera init failed with error 0x%x", err );
     delay( 2000 );
     ESP.restart();
 //    return;
   }
-  Serial.println( "Camera ON!" );
+  DBG_OUTPUT_PORT.println( "Camera ON!" );
 
   sensor_t * s = esp_camera_sensor_get();
   //initial sensors are flipped vertically and colors are a bit saturated
@@ -392,7 +388,7 @@ void flashON( void ) {
 
   pinMode( FLASH_LED, OUTPUT );
   digitalWrite( FLASH_LED, HIGH );
-  Serial.println( "Flash is ON, smile!" );
+  DBG_OUTPUT_PORT.println( "Flash is ON, smile!" );
 
 }
 
@@ -442,11 +438,11 @@ void doSnapPic( void ) {
   sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_min );
   sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_sec );
   picFileName = picFileDir + String( "/PIC-" ) + currentDateTime + String( ".jpg" ) ;
-  Serial.println( picFileName );
+  DBG_OUTPUT_PORT.println( picFileName );
 
   picFile = SD_MMC.open( picFileName, FILE_WRITE );
   if( !picFile ) {
-    Serial.println( "error opening file for picture" );
+    DBG_OUTPUT_PORT.println( "error opening file for picture" );
   }
 
   flashON();
@@ -454,43 +450,44 @@ void doSnapPic( void ) {
   picFrameBuffer = esp_camera_fb_get();
   flashOFF();
   if( !picFrameBuffer ) {
-    Serial.println( "Camera capture failed" );
+    DBG_OUTPUT_PORT.println( "Camera capture failed" );
     return;
   }
   int picFrameLength = picFrameBuffer->len;
-  Serial.print( "Picture length : " );
-  Serial.println( picFrameLength );
+  DBG_OUTPUT_PORT.print( "Picture length : " );
+  DBG_OUTPUT_PORT.println( picFrameLength );
 
   picFile.write( picFrameBuffer->buf, picFrameLength );
-//  Serial.println( "Wrote file .." );
+//  DBG_OUTPUT_PORT.println( "Wrote file .." );
 
   //return the frame buffer back to the driver for reuse
   esp_camera_fb_return( picFrameBuffer );
 
   picFile.close();
 
-  Serial.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
-  Serial.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+  DBG_OUTPUT_PORT.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
+  DBG_OUTPUT_PORT.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
 
 }
 
 void setup() {
 
-  Serial.begin( 115200 );
+  DBG_OUTPUT_PORT.begin( 115200 );
   delay( 10 );
-  Serial.setDebugOutput( true );
+  DBG_OUTPUT_PORT.setDebugOutput( true );
   WiFi.printDiag(Serial); // research this
-  Serial.println();
+  DBG_OUTPUT_PORT.println();
 
   prnEspStats();
 
   if( !SPIFFS.begin() ) {
-    Serial.println( "An Error has occurred while mounting SPIFFS" );
+    DBG_OUTPUT_PORT.println( "An Error has occurred while mounting SPIFFS" );
   }
   // // SPIFFS.format(); // BONGA ???
 
   delay( 10 );
   initWiFi();
+  wifiWaitTime = millis();
 
   getNTPTime();
 
@@ -521,19 +518,22 @@ void loop() {
     tickerFired = false;
     doSnapPic();
     ElapsedStr( elapsedTimeString );
-    Serial.println( elapsedTimeString );
+    DBG_OUTPUT_PORT.println( elapsedTimeString );
     if( oldTickerValue != waitTime ) {
       tickerSnapPic.detach( );
       tickerSnapPic.attach( waitTime, flagSnapPicTicker );
       oldTickerValue = waitTime;
     }
-    Serial.print( "Frame size set at - " );
-    Serial.println( foo[picSnapSize] );
+    DBG_OUTPUT_PORT.print( "Frame size set at - " );
+    DBG_OUTPUT_PORT.println( foo[picSnapSize] );
   }
 
   if( WiFi.status() != WL_CONNECTED ) {
-    WiFi.disconnect();
-    WiFi.begin();
+    if( wifiWaitTime + WIFI_DISC_DELAY <= millis() ) {
+      WiFi.disconnect();
+      WiFi.begin();
+      wifiWaitTime = millis();
+    }
   }
 
 }
