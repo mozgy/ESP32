@@ -19,6 +19,40 @@ String fnOptionVGA( char *str1, char *str2 ) {
 
 }
 
+void fnSetFrameSize( String frameSize ) {
+
+  if( frameSize == "FRAMESIZE_QQVGA" ) {
+    picSnapSize = FRAMESIZE_QQVGA;
+  } else if( frameSize == "FRAMESIZE_QQVGA2" ) {
+    picSnapSize = FRAMESIZE_QQVGA2;
+  } else if( frameSize == "FRAMESIZE_QCIF" ) {
+    picSnapSize = FRAMESIZE_QCIF;
+  } else if( frameSize == "FRAMESIZE_HQVGA" ) {
+    picSnapSize = FRAMESIZE_HQVGA;
+  } else if( frameSize == "FRAMESIZE_QVGA" ) {
+    picSnapSize = FRAMESIZE_QVGA;
+  } else if( frameSize == "FRAMESIZE_CIF" ) {
+    picSnapSize = FRAMESIZE_CIF;
+  } else if( frameSize == "FRAMESIZE_VGA" ) {
+    picSnapSize = FRAMESIZE_VGA;
+  } else if( frameSize == "FRAMESIZE_SVGA" ) {
+    picSnapSize = FRAMESIZE_SVGA;
+  } else if( frameSize == "FRAMESIZE_XGA" ) {
+    picSnapSize = FRAMESIZE_XGA;
+  } else if( frameSize == "FRAMESIZE_SXGA" ) {
+    picSnapSize = FRAMESIZE_SXGA;
+  } else if( frameSize == "FRAMESIZE_UXGA" ) {
+    picSnapSize = FRAMESIZE_UXGA;
+  } else if( frameSize == "FRAMESIZE_QXGA" ) {
+    picSnapSize = FRAMESIZE_QXGA;
+  } else {
+    picSnapSize = FRAMESIZE_SVGA;
+  }
+  sensor_t * s = esp_camera_sensor_get();
+  s->set_framesize( s, picSnapSize );
+
+}
+
 String getHTMLRootText( void ) {
 
   String webText;
@@ -46,7 +80,7 @@ String getHTMLRootText( void ) {
 
 }
 
-String getHTMLSettingsText( void ) {
+String getHTMLSetupText( void ) {
 
   String webText;
 
@@ -185,11 +219,20 @@ bool loadFromSDCard( String path ) {
   }
 
   if( webServer.streamFile( dataFile, dataType ) != dataFile.size() ) {
-    Serial.println( "Sent less data than expected!" );
+    DBG_OUTPUT_PORT.println( "Sent less data than expected!" );
   }
 
   dataFile.close();
   return true;
+
+// FIXME - put SD_MMC stuff in separate file !?
+//  listDir(SD_MMC, "/", 0);
+//  removeDir(SD_MMC, "/mydir");
+//  createDir(SD_MMC, "/mydir");
+//  deleteFile(SD_MMC, "/hello.txt");
+//  writeFile(SD_MMC, "/hello.txt", "Hello ");
+//  appendFile(SD_MMC, "/hello.txt", "World!\n");
+//  listDir(SD_MMC, "/", 0);
 
 }
 
@@ -204,51 +247,27 @@ void handleInput( void ) {
   arg2 = webServer.arg( "picSize" );
   arg3 = webServer.arg( "timePeriod" );
 
-  Serial.print( "Got arguments - " );
-  Serial.print( String( arg1 ) );
-  Serial.print( " - " );
-  Serial.print( String( arg2 ) );
-  Serial.print( " - " );
-  Serial.print( String( arg3 ) );
-  Serial.println( " - !" );
-
   if( arg1 == "on" )
     flashEnable = true;
   else
     flashEnable = false;
 
-  if( arg2 == "FRAMESIZE_QQVGA" ) {
-    picSnapSize = FRAMESIZE_QQVGA;
-  } else if( arg2 == "FRAMESIZE_QQVGA2" ) {
-    picSnapSize = FRAMESIZE_QQVGA2;
-  } else if( arg2 == "FRAMESIZE_QCIF" ) {
-    picSnapSize = FRAMESIZE_QCIF;
-  } else if( arg2 == "FRAMESIZE_HQVGA" ) {
-    picSnapSize = FRAMESIZE_HQVGA;
-  } else if( arg2 == "FRAMESIZE_QVGA" ) {
-    picSnapSize = FRAMESIZE_QVGA;
-  } else if( arg2 == "FRAMESIZE_CIF" ) {
-    picSnapSize = FRAMESIZE_CIF;
-  } else if( arg2 == "FRAMESIZE_VGA" ) {
-    picSnapSize = FRAMESIZE_VGA;
-  } else if( arg2 == "FRAMESIZE_SVGA" ) {
-    picSnapSize = FRAMESIZE_SVGA;
-  } else if( arg2 == "FRAMESIZE_XGA" ) {
-    picSnapSize = FRAMESIZE_XGA;
-  } else if( arg2 == "FRAMESIZE_SXGA" ) {
-    picSnapSize = FRAMESIZE_SXGA;
-  } else if( arg2 == "FRAMESIZE_UXGA" ) {
-    picSnapSize = FRAMESIZE_UXGA;
-  } else if( arg2 == "FRAMESIZE_QXGA" ) {
-    picSnapSize = FRAMESIZE_QXGA;
-  }
-  sensor_t * s = esp_camera_sensor_get();
-  s->set_framesize( s, picSnapSize );
+  fnSetFrameSize( arg2 );
 
-  waitTime = arg3.toInt();
+  waitTime = arg3.toInt(); // TODO - foolproof this
 
   webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
   webServer.send( 200, "text/html", webText );
+
+/*
+  DBG_OUTPUT_PORT.print( "Got arguments - " );
+  DBG_OUTPUT_PORT.print( String( arg1 ) );
+  DBG_OUTPUT_PORT.print( " - " );
+  DBG_OUTPUT_PORT.print( String( arg2 ) );
+  DBG_OUTPUT_PORT.print( " - " );
+  DBG_OUTPUT_PORT.print( String( arg3 ) );
+  DBG_OUTPUT_PORT.println( " - !" );
+ */
 
 }
 
@@ -259,10 +278,22 @@ void handleRoot( void ) {
 
 }
 
-void handleSettings( void ) {
+void handleSetup( void ) {
 
-  String webText = getHTMLSettingsText();
-  webServer.send( 200, "text/html", webText );
+  if( webServer.authenticate( http_username, http_password ) ) {
+    String webText = getHTMLSetupText();
+    webServer.send( 200, "text/html", webText );
+  } else {
+    webServer.send( 200, "text/plain", "Not Authorized!" );
+  }
+
+}
+
+void handleLogin( void ) {
+
+  if( !webServer.authenticate( http_username, http_password ) )
+    return webServer.requestAuthentication();
+  webServer.send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
 
 }
 
@@ -298,11 +329,11 @@ void handleDeleteSDCardFile( void ) {
   if( webServer.hasArg( "FILENAME" ) ) {
     String fileName = webServer.arg( "FILENAME" );
     webText = "About to DELETE - " + String( fileName );
-    Serial.print( "About to DELETE - " );
-    Serial.println( fileName );
+    DBG_OUTPUT_PORT.print( "About to DELETE - " );
+    DBG_OUTPUT_PORT.println( fileName );
   } else {
     webText = "Nothing To Do !";
-    Serial.println( "Nothing To Do !" );
+    DBG_OUTPUT_PORT.println( "Nothing To Do !" );
   }
 
   webServer.send( 200, "text/plain", webText );
@@ -340,9 +371,9 @@ void handleNotFound( void ) {
   for( uint8_t i = 0; i < webServer.args(); i++ ) {
     webText += " " + webServer.argName( i ) + ": " + webServer.arg( i ) + "\n";
   }
-  Serial.print( "Basename - " );
-  Serial.println( fileName );
-  Serial.println( webText );
+  DBG_OUTPUT_PORT.print( "Basename - " );
+  DBG_OUTPUT_PORT.println( fileName );
+  DBG_OUTPUT_PORT.println( webText );
 
   bool fileSPIFFS = false;
   if( fileName.endsWith( ".css" ) ) {
@@ -373,8 +404,9 @@ void initWebServer( void ) {
   webServer.on( "/", HTTP_GET, handleRoot );
   webServer.on( "/delete", HTTP_GET, handleDeleteSDCardFile );
 //  webServer.on( "/json", HTTP_GET, handleJSonList );
+  webServer.on( "/login", HTTP_GET, handleLogin );
   webServer.on( "/set", HTTP_GET, handleInput );
-  webServer.on( "/setup", HTTP_GET, handleSettings );
+  webServer.on( "/setup", HTTP_GET, handleSetup );
   webServer.on( "/snaps", HTTP_GET, handlePictures );
 
 // handleNotFound serves all *.js and *.css files from SPIFFS
@@ -424,6 +456,41 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
 }
 
+void asyncHandleScan( AsyncWebServerRequest *request ) {
+
+  if( !request->authenticate( http_username, http_password ) ) {
+    request->send( 200, "text/plain", "Not Authorized!" );
+  }
+
+//First request will return 0 results unless you start scan from somewhere else (loop/setup)
+//Do not request more often than 3-5 seconds
+  String json = "[";
+  int n = WiFi.scanComplete();
+  if(n == -2){
+    WiFi.scanNetworks(true);
+  } else if(n){
+    for (int i = 0; i < n; ++i){
+      if(i) json += ",";
+      json += "{";
+      json += "\"rssi\":"+String(WiFi.RSSI(i));
+      json += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
+      json += ",\"bssid\":\""+WiFi.BSSIDstr(i)+"\"";
+      json += ",\"channel\":"+String(WiFi.channel(i));
+      json += ",\"secure\":"+String(WiFi.encryptionType(i));
+//      json += ",\"hidden\":"+String(WiFi.isHidden(i)?"true":"false");
+      json += "}";
+    }
+    WiFi.scanDelete();
+    if(WiFi.scanComplete() == -2){
+      WiFi.scanNetworks(true);
+    }
+  }
+  json += "]";
+  request->send(200, "application/json", json);
+  json = String();
+
+}
+
 void asyncHandleRoot( AsyncWebServerRequest *request ) {
 
   String webText = getHTMLRootText();
@@ -433,27 +500,61 @@ void asyncHandleRoot( AsyncWebServerRequest *request ) {
 
 void asyncHandleSetup( AsyncWebServerRequest *request ) {
 
-  String webText = getHTMLSettingsText();
-  request->send( 200, "text/html", webText );
+  if( request->authenticate( http_username, http_password ) ) {
+    String webText = getHTMLSetupText();
+    request->send( 200, "text/html", webText );
+  } else {
+    // request->send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
+    request->send( 200, "text/plain", "Not Authorized!" );
+  }
+
+}
+
+void asyncHandleLogin( AsyncWebServerRequest *request ) {
+
+  if( !request->authenticate( http_username, http_password ) )
+    return request->requestAuthentication();
+  request->send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
 
 }
 
 void asyncHandleInput( AsyncWebServerRequest *request ) {
 
-//  String arg1;
-//  String arg2;
   String webText;
+  AsyncWebParameter* arg1;
+  AsyncWebParameter* arg2;
+  AsyncWebParameter* arg3;
 
-//  arg1 = webServer.arg( "onoffswitch" );
-//  arg2 = webServer.arg( "timePeriod" );
+  if( request->hasParam( "onoffswitch" ) )
+    arg1 = request->getParam( "onoffswitch" );
 
-//  if( arg1 == "on" )
-//    flashEnable = true;
-//  else
-//    flashEnable = false;
+  if( arg1->value() == "on" )
+    flashEnable = true;
+  else
+    flashEnable = false;
+
+  if( request->hasParam( "picSize" ) ) {
+    arg2 = request->getParam( "picSize" );
+    fnSetFrameSize( arg2->value() );
+  }
+
+  if( request->hasParam( "timePeriod" ) ) {
+    arg3 = request->getParam( "timePeriod" );
+    waitTime = arg3->value().toInt(); // TODO - foolproof this
+  }
 
   webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
   request->send( 200, "text/html", webText );
+
+/*
+  DBG_OUTPUT_PORT.print( "Got arguments - " );
+  DBG_OUTPUT_PORT.print( String( arg1->value() ) );
+  DBG_OUTPUT_PORT.print( " - " );
+  DBG_OUTPUT_PORT.print( String( arg2->value() ) );
+  DBG_OUTPUT_PORT.print( " - " );
+  DBG_OUTPUT_PORT.print( String( arg3->value() ) );
+  DBG_OUTPUT_PORT.println( " - !" );
+ */
 
 }
 
@@ -490,9 +591,9 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     webText += String( p->name().c_str() ) + " : " + String( p->value().c_str() ) + "\r\n";
   }
 
-  Serial.print( "Basename - " );
-  Serial.println( fileName );
-  Serial.println( webText );
+  DBG_OUTPUT_PORT.print( "Basename - " );
+  DBG_OUTPUT_PORT.println( fileName );
+  DBG_OUTPUT_PORT.println( webText );
 
   bool fileSPIFFS = false;
   if( fileName.endsWith( ".css" ) ) {
@@ -513,47 +614,35 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 
   webText = "\nNo Handler\r\n" + webText;
   request->send( 404, "text/plain", webText );
-  Serial.println( webText );
+  DBG_OUTPUT_PORT.println( webText );
 
 }
 
 void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
+  asyncWebServer.on( "/login", HTTP_GET, asyncHandleLogin );
+  asyncWebServer.on( "/scan", HTTP_GET, asyncHandleScan );
   asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/setup", HTTP_GET, asyncHandleSetup );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 
-//First request will return 0 results unless you start scan from somewhere else (loop/setup)
-//Do not request more often than 3-5 seconds
-asyncWebServer.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
-  String json = "[";
-  int n = WiFi.scanComplete();
-  if(n == -2){
-    WiFi.scanNetworks(true);
-  } else if(n){
-    for (int i = 0; i < n; ++i){
-      if(i) json += ",";
-      json += "{";
-      json += "\"rssi\":"+String(WiFi.RSSI(i));
-      json += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
-      json += ",\"bssid\":\""+WiFi.BSSIDstr(i)+"\"";
-      json += ",\"channel\":"+String(WiFi.channel(i));
-      json += ",\"secure\":"+String(WiFi.encryptionType(i));
-//      json += ",\"hidden\":"+String(WiFi.isHidden(i)?"true":"false");
-      json += "}";
-    }
-    WiFi.scanDelete();
-    if(WiFi.scanComplete() == -2){
-      WiFi.scanNetworks(true);
-    }
-  }
-  json += "]";
-  request->send(200, "application/json", json);
-  json = String();
-});
-
   asyncWebServer.begin();
 
 }
+
+/*
+
+  asyncWebServer.on( "/", HTTP_GET, []( AsyncWebServerRequest *request ){
+    String webText = getHTMLRootText();
+    request->send( 200, "text/html", webText );
+  });
+
+  asyncWebServer.on( "/login", HTTP_GET, []( AsyncWebServerRequest *request ){
+    if( !request->authenticate( http_username, http_password ) )
+      return request->requestAuthentication();
+    request->send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
+  });
+
+ */
