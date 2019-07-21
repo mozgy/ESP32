@@ -324,6 +324,11 @@ void handleJSonList( void ) {
 
 void handleDeleteSDCardFile( void ) {
 
+  if( !webServer.authenticate( http_username, http_password ) ) {
+    webServer.send( 200, "text/plain", "Not Authorized!" );
+    return;
+  }
+
   String webText;
 
   if( webServer.hasArg( "FILENAME" ) ) {
@@ -447,7 +452,9 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   }
   if( path.endsWith( ".jpg" ) ) {
     dataType = "image/jpeg";
-    request->send( SD_MMC, path.c_str(), String(), true );
+    // request->send( SD_MMC, path.c_str(), String(), true );
+    request->send( SD_MMC, path.c_str(), dataType );
+    // request->send(SPIFFS, "/test.jpg", "image/jpeg");
     dataFile.close();
     return true;
   }
@@ -570,6 +577,14 @@ void asyncHandlePictures( AsyncWebServerRequest *request ) {
 
 }
 
+void asyncHandleDelete( AsyncWebServerRequest *request ) {
+
+  if( !request->authenticate( http_username, http_password ) ) {
+    request->send( 200, "text/plain", "Not Authorized!" );
+  }
+
+}
+
 void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 
   String path = request->url();
@@ -621,6 +636,7 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
+  asyncWebServer.on( "/delete", HTTP_GET, asyncHandleDelete );
   asyncWebServer.on( "/login", HTTP_GET, asyncHandleLogin );
   asyncWebServer.on( "/scan", HTTP_GET, asyncHandleScan );
   asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
