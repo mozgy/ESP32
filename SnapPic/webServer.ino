@@ -86,8 +86,9 @@ String getHTMLSetupText( void ) {
 
   webText = "<!DOCTYPE html><html>";
   webText += "<head><link rel='stylesheet' type='text/css' href='onoffswitch.css'></head>";
-  webText += "<body>Camera Setup<p>";
-  webText += "<form action='/set'><div class='onoffswitch'>";
+  webText += "<body>Camera Setup";
+  webText += "<p><a href=/startap>TestAP</a>";
+  webText += "<p><form action='/set'><div class='onoffswitch'>";
   webText += "<input type='checkbox' name='onoffswitch' class='onoffswitch-checkbox' id='myonoffswitch'";
   if( flashEnable )
     webText += " checked";
@@ -256,7 +257,8 @@ void handleInput( void ) {
 
   waitTime = arg3.toInt(); // TODO - foolproof this
 
-  webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
+  webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'>";
+  webText += "</head><body>Set!</body></html>";
   webServer.send( 200, "text/html", webText );
 
 /*
@@ -452,9 +454,8 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   }
   if( path.endsWith( ".jpg" ) ) {
     dataType = "image/jpeg";
-    // request->send( SD_MMC, path.c_str(), String(), true );
+    // request->send( SD_MMC, path.c_str(), String(), true ); // new window - download
     request->send( SD_MMC, path.c_str(), dataType );
-    // request->send(SPIFFS, "/test.jpg", "image/jpeg");
     dataFile.close();
     return true;
   }
@@ -511,7 +512,6 @@ void asyncHandleSetup( AsyncWebServerRequest *request ) {
     String webText = getHTMLSetupText();
     request->send( 200, "text/html", webText );
   } else {
-    // request->send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
     request->send( 200, "text/plain", "Not Authorized!" );
   }
 
@@ -528,40 +528,36 @@ void asyncHandleLogin( AsyncWebServerRequest *request ) {
 void asyncHandleInput( AsyncWebServerRequest *request ) {
 
   String webText;
-  AsyncWebParameter* arg1;
-  AsyncWebParameter* arg2;
-  AsyncWebParameter* arg3;
 
-  if( request->hasParam( "onoffswitch" ) )
-    arg1 = request->getParam( "onoffswitch" );
+  DBG_OUTPUT_PORT.print( "Got arguments - " );
 
-  if( arg1->value() == "on" )
-    flashEnable = true;
-  else
-    flashEnable = false;
+  if( request->hasParam( "onoffswitch" ) ) {
+    AsyncWebParameter* arg1 = request->getParam( "onoffswitch" );
+    if( arg1->value() == "on" )
+      flashEnable = true;
+    else
+      flashEnable = false;
+    DBG_OUTPUT_PORT.print( String( arg1->value() ) );
+  }
+  DBG_OUTPUT_PORT.print( " - " );
 
   if( request->hasParam( "picSize" ) ) {
-    arg2 = request->getParam( "picSize" );
+    AsyncWebParameter* arg2 = request->getParam( "picSize" );
     fnSetFrameSize( arg2->value() );
+    DBG_OUTPUT_PORT.print( String( arg2->value() ) );
   }
+  DBG_OUTPUT_PORT.print( " - " );
 
   if( request->hasParam( "timePeriod" ) ) {
-    arg3 = request->getParam( "timePeriod" );
+    AsyncWebParameter* arg3 = request->getParam( "timePeriod" );
     waitTime = arg3->value().toInt(); // TODO - foolproof this
+    DBG_OUTPUT_PORT.print( String( arg3->value() ) );
   }
-
-  webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
-  request->send( 200, "text/html", webText );
-
-/*
-  DBG_OUTPUT_PORT.print( "Got arguments - " );
-  DBG_OUTPUT_PORT.print( String( arg1->value() ) );
-  DBG_OUTPUT_PORT.print( " - " );
-  DBG_OUTPUT_PORT.print( String( arg2->value() ) );
-  DBG_OUTPUT_PORT.print( " - " );
-  DBG_OUTPUT_PORT.print( String( arg3->value() ) );
   DBG_OUTPUT_PORT.println( " - !" );
- */
+
+  webText = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='5; URL=/'>";
+  webText += "</head><body>Set!</body></html>";
+  request->send( 200, "text/html", webText );
 
 }
 
@@ -581,6 +577,27 @@ void asyncHandleDelete( AsyncWebServerRequest *request ) {
 
   if( !request->authenticate( http_username, http_password ) ) {
     request->send( 200, "text/plain", "Not Authorized!" );
+  } else {
+    AsyncWebParameter* argDelete = request->getParam( "FILENAME" );
+    String fileName = argDelete->value();
+    String webText = "About to DELETE - " + String( fileName );
+    DBG_OUTPUT_PORT.print( "About to DELETE - " );
+    DBG_OUTPUT_PORT.println( fileName );
+    request->send( 200, "text/plain", webText );
+  }
+
+}
+
+void asyncHandleStartAP( AsyncWebServerRequest *request ) {
+
+  if( !request->authenticate( http_username, http_password ) ) {
+    request->send( 200, "text/plain", "Not Authorized!" );
+  } else {
+    WiFi.softAP( "MozzAICam" );
+    IPAddress IP = WiFi.softAPIP();
+    DBG_OUTPUT_PORT.print( "AP IP address: " );
+    DBG_OUTPUT_PORT.println( IP );
+    request->send( 200, "text/plain", "AP Started!" );
   }
 
 }
@@ -642,6 +659,7 @@ void initAsyncWebServer( void ) {
   asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/setup", HTTP_GET, asyncHandleSetup );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
+  asyncWebServer.on( "/startap", HTTP_GET, asyncHandleStartAP );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 
   asyncWebServer.begin();

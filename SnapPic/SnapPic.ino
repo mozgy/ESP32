@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include "esp_camera.h"
 #include <WiFi.h>
+#include "esp_wifi.h"
 #include <WebServer.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -20,7 +21,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.30"
+#define SW_VERSION "1.01.31"
 #define AI_CAM_SERIAL "3"
 
 #define DBG_OUTPUT_PORT Serial
@@ -61,6 +62,7 @@ picSizeStrings_t foo[] = {
 #include "credentials.h"
 #define WIFI_DISC_DELAY 30000L
 unsigned long wifiWaitTime;
+int wifiSTATries;
 
 long timeZone = 1;
 byte daySaveTime = 1;
@@ -69,9 +71,9 @@ struct tm tmstruct;
 char elapsedTimeString[40];
 char currentDateTime[17];
 
-WebServer webServer(80);
+WebServer webServer(8080);
 
-AsyncWebServer asyncWebServer(8080);
+AsyncWebServer asyncWebServer(80);
 
 Ticker tickerSnapPic;
 boolean tickerFired;
@@ -155,20 +157,32 @@ void waitForConnect ( unsigned long timeout ) {
 
 void initWiFi( void ) {
 
+  wifiSTATries = 1;
+  bool wifiNoSTA = false;
+
   WiFi.softAPdisconnect( true );
+  esp_wifi_set_storage(WIFI_STORAGE_RAM);
   WiFi.mode( WIFI_STA );
   WiFi.begin( ssid, password );
 
+
 // FIXME - this could be better!
+/*  
   waitForConnect( 10 * 1000 );
-  while( WiFi.waitForConnectResult() != WL_CONNECTED ) {
-    DBG_OUTPUT_PORT.println( "Connection Failed! Rebooting..." );
-    delay( 5000 );
-    ESP.restart();
+  if( WiFi.waitForConnectResult() != WL_CONNECTED ) {
+    delay( 500 );
+    // DBG_OUTPUT_PORT.println( "Connection Failed! Rebooting..." );
+    // ESP.restart();
+    wifiNoSTA = true;
   }
+  if( wifiNoSTA ) {
+    WiFi.mode( WIFI_AP );
+    WiFi.begin( "AI-Cam" );
+  }
+ */
 // FIXME - this could be better!
 
-  DBG_OUTPUT_PORT.println( "WiFi connected" );
+
 
 /* SOME ADVICE
 atanisoft@atanisoft17:15
@@ -443,6 +457,7 @@ void doSnapPic( void ) {
   picFile = SD_MMC.open( picFileName, FILE_WRITE );
   if( !picFile ) {
     DBG_OUTPUT_PORT.println( "error opening file for picture" );
+    return;
   }
 
   flashON();
@@ -483,7 +498,6 @@ void setup() {
   if( !SPIFFS.begin() ) {
     DBG_OUTPUT_PORT.println( "An Error has occurred while mounting SPIFFS" );
   }
-  // // SPIFFS.format(); // BONGA ???
 
   delay( 10 );
   initWiFi();
@@ -528,6 +542,8 @@ void loop() {
     DBG_OUTPUT_PORT.println( foo[picSnapSize] );
   }
 
+// FIXME - this could be better!
+/*
   if( WiFi.status() != WL_CONNECTED ) {
     if( wifiWaitTime + WIFI_DISC_DELAY <= millis() ) {
       WiFi.disconnect();
@@ -535,5 +551,7 @@ void loop() {
       wifiWaitTime = millis();
     }
   }
+ */
+// FIXME - this could be better!
 
 }
