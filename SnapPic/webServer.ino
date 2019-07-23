@@ -214,8 +214,10 @@ bool loadFromSDCard( String path ) {
 
 // NO index.html handling for '/' - maybe TODO later
   if( dataFile.isDirectory() ) {
-    webText = listDirectory( dataFile );
-    webServer.send( 200, "text/html", webText );
+//    webText = listDirectory( dataFile );
+//    webServer.send( 200, "text/html", webText );
+    webText = listDirectory( dataFile, true );
+    webServer.send( 200, "application/json", webText );
     dataFile.close();
     return true;
   }
@@ -457,8 +459,10 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
 // NO index.html handling for '/' - maybe TODO later - HTML stuff is on SPIFFS
   if( dataFile.isDirectory() ) {
-    webText = listDirectory( dataFile );
-    request->send( 200, "text/html", webText );
+//    webText = listDirectory( dataFile );
+//    request->send( 200, "text/html", webText );
+    webText = listDirectory( dataFile, true );
+    request->send( 200, "application/json", webText );
     dataFile.close();
     return true;
   }

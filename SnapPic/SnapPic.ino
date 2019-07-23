@@ -21,7 +21,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.32"
+#define SW_VERSION "1.01.33"
 #define AI_CAM_SERIAL "1"
 
 #define DBG_OUTPUT_PORT Serial
@@ -54,10 +54,6 @@ picSizeStrings_t foo[] = {
   "Framesize UXGA - 1600x1200",
   "Framesize QXGA - 2048x1536"
 };
-//typedef struct{
-//  framesize_t picFrameSize;
-//  String picVerboseDef;
-//} picsize_t;
 
 #include "credentials.h"
 #define WIFI_DISC_DELAY 30000L
