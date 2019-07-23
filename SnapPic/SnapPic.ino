@@ -21,8 +21,8 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.31"
-#define AI_CAM_SERIAL "3"
+#define SW_VERSION "1.01.32"
+#define AI_CAM_SERIAL "1"
 
 #define DBG_OUTPUT_PORT Serial
 
@@ -71,9 +71,13 @@ struct tm tmstruct;
 char elapsedTimeString[40];
 char currentDateTime[17];
 
-WebServer webServer(8080);
+WebServer webServer(80);
+AsyncWebServer asyncWebServer(8080);
 
-AsyncWebServer asyncWebServer(80);
+typedef struct{
+  String listJSON;
+  int numItems;
+} listjson_t;
 
 Ticker tickerSnapPic;
 boolean tickerFired;
@@ -109,7 +113,7 @@ void prnEspStats( void ) {
 
 }
 
-void ElapsedStr( char *str ) {
+void fnElapsedStr( char *str ) {
 
   unsigned long sec, minute, hour;
 
@@ -141,6 +145,62 @@ void ElapsedStr( char *str ) {
   } else {
     sprintf( str, "%s%2d", str, ( sec % 60 ) );
   }
+
+}
+
+listjson_t fnJSONList( File listDir ) {
+
+  String strJSON = "[";
+  int itemCounter = 0;
+
+  File file = listDir.openNextFile();
+  while( file ){
+    itemCounter++;
+    if( strJSON != "[" ) {
+      strJSON += ',';
+    }
+    strJSON += "{\"name\":\"";
+    strJSON += String( file.name() ).substring(1);
+    strJSON += "\"}";
+    file = listDir.openNextFile();
+  }
+  strJSON += "]";
+
+  return { strJSON, itemCounter };
+
+}
+
+void fnSetFrameSize( String frameSize ) {
+
+  if( frameSize == "FRAMESIZE_QQVGA" ) {
+    picSnapSize = FRAMESIZE_QQVGA;
+  } else if( frameSize == "FRAMESIZE_QQVGA2" ) {
+    picSnapSize = FRAMESIZE_QQVGA2;
+  } else if( frameSize == "FRAMESIZE_QCIF" ) {
+    picSnapSize = FRAMESIZE_QCIF;
+  } else if( frameSize == "FRAMESIZE_HQVGA" ) {
+    picSnapSize = FRAMESIZE_HQVGA;
+  } else if( frameSize == "FRAMESIZE_QVGA" ) {
+    picSnapSize = FRAMESIZE_QVGA;
+  } else if( frameSize == "FRAMESIZE_CIF" ) {
+    picSnapSize = FRAMESIZE_CIF;
+  } else if( frameSize == "FRAMESIZE_VGA" ) {
+    picSnapSize = FRAMESIZE_VGA;
+  } else if( frameSize == "FRAMESIZE_SVGA" ) {
+    picSnapSize = FRAMESIZE_SVGA;
+  } else if( frameSize == "FRAMESIZE_XGA" ) {
+    picSnapSize = FRAMESIZE_XGA;
+  } else if( frameSize == "FRAMESIZE_SXGA" ) {
+    picSnapSize = FRAMESIZE_SXGA;
+  } else if( frameSize == "FRAMESIZE_UXGA" ) {
+    picSnapSize = FRAMESIZE_UXGA;
+  } else if( frameSize == "FRAMESIZE_QXGA" ) {
+    picSnapSize = FRAMESIZE_QXGA;
+  } else {
+    picSnapSize = FRAMESIZE_SVGA;
+  }
+  sensor_t * s = esp_camera_sensor_get();
+  s->set_framesize( s, picSnapSize );
 
 }
 
@@ -205,7 +265,7 @@ void initOTA( void ) {
 
   // Hostname defaults to esp3232-[MAC]
   // add AI_CAM_SERIAL suffix
-  ArduinoOTA.setHostname( "mozz-esp32-ai-3" );
+  ArduinoOTA.setHostname( "mozz-esp32-ai-1" );
 
   // No authentication by default
   // ArduinoOTA.setPassword( "admin" );
@@ -531,7 +591,7 @@ void loop() {
   if( tickerFired ) {
     tickerFired = false;
     doSnapPic();
-    ElapsedStr( elapsedTimeString );
+    fnElapsedStr( elapsedTimeString );
     DBG_OUTPUT_PORT.println( elapsedTimeString );
     if( oldTickerValue != waitTime ) {
       tickerSnapPic.detach( );

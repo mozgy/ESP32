@@ -19,40 +19,6 @@ String fnOptionVGA( char *str1, char *str2 ) {
 
 }
 
-void fnSetFrameSize( String frameSize ) {
-
-  if( frameSize == "FRAMESIZE_QQVGA" ) {
-    picSnapSize = FRAMESIZE_QQVGA;
-  } else if( frameSize == "FRAMESIZE_QQVGA2" ) {
-    picSnapSize = FRAMESIZE_QQVGA2;
-  } else if( frameSize == "FRAMESIZE_QCIF" ) {
-    picSnapSize = FRAMESIZE_QCIF;
-  } else if( frameSize == "FRAMESIZE_HQVGA" ) {
-    picSnapSize = FRAMESIZE_HQVGA;
-  } else if( frameSize == "FRAMESIZE_QVGA" ) {
-    picSnapSize = FRAMESIZE_QVGA;
-  } else if( frameSize == "FRAMESIZE_CIF" ) {
-    picSnapSize = FRAMESIZE_CIF;
-  } else if( frameSize == "FRAMESIZE_VGA" ) {
-    picSnapSize = FRAMESIZE_VGA;
-  } else if( frameSize == "FRAMESIZE_SVGA" ) {
-    picSnapSize = FRAMESIZE_SVGA;
-  } else if( frameSize == "FRAMESIZE_XGA" ) {
-    picSnapSize = FRAMESIZE_XGA;
-  } else if( frameSize == "FRAMESIZE_SXGA" ) {
-    picSnapSize = FRAMESIZE_SXGA;
-  } else if( frameSize == "FRAMESIZE_UXGA" ) {
-    picSnapSize = FRAMESIZE_UXGA;
-  } else if( frameSize == "FRAMESIZE_QXGA" ) {
-    picSnapSize = FRAMESIZE_QXGA;
-  } else {
-    picSnapSize = FRAMESIZE_SVGA;
-  }
-  sensor_t * s = esp_camera_sensor_get();
-  s->set_framesize( s, picSnapSize );
-
-}
-
 String getHTMLRootText( void ) {
 
   String webText;
@@ -66,7 +32,7 @@ String getHTMLRootText( void ) {
   webText += "</head><body>";
   webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
-  ElapsedStr( elapsedTimeString );
+  fnElapsedStr( elapsedTimeString );
   webText += String( elapsedTimeString ) + "<br>";
   sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr );
@@ -138,6 +104,17 @@ typedef enum {
 // placeholder=\"multiple of 10\"
 }
 
+String listDirectoryTry2( File path ) {
+
+  String linkName;
+  String webText;
+  int numPic = 0;
+  listjson_t table;
+
+  table = fnJSONList( path );
+
+}
+
 String listDirectory( File path ) {
 
   String linkName;
@@ -171,7 +148,9 @@ String listDirectory( File path ) {
       }
       webText += "</td>";
       webText += "</tr>";
+      file.close();
       file = path.openNextFile();
+      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
       numPic++;
     }
   }
@@ -189,6 +168,36 @@ String listDirectory( File path ) {
   return webText;
 
 }
+
+String listDirectory( File path, bool jsonFlag ) {
+
+  String linkName;
+  int numPic = 0;
+  String strJSON = "[";
+
+  if( path.isDirectory() ) {
+    File file = path.openNextFile();
+    while( file ) {
+      linkName = String( file.name() );
+      if( strJSON != "[" ) {
+        strJSON += ',';
+      }
+      strJSON += "{\"type\":\"";
+      strJSON += ( file.isDirectory() ) ? "dir" : "file";
+      strJSON += "\",\"name\":\"";
+      strJSON += String( file.name() ).substring(1);
+      strJSON += "\"}";
+      file.close();
+      file = path.openNextFile();
+      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
+      numPic++;
+    }
+  }
+  strJSON += "]";
+  return strJSON;
+
+}
+
 
 /// WebServer Definitions
 
@@ -315,6 +324,7 @@ void handleJSonList( void ) {
       webText += "\",\"name\":\"";
       webText += String( file.name() ).substring(1);
       webText += "\"}";
+      file.close();
       file = picDir.openNextFile();
     }
   }
@@ -566,8 +576,10 @@ void asyncHandlePictures( AsyncWebServerRequest *request ) {
   File picDir;
   String webText;
 
+  DBG_OUTPUT_PORT.printf( "Heap before listDirectory: %u\n", ESP.getFreeHeap() );
   picDir = SD_MMC.open( "/ai-cam" );
   webText = listDirectory( picDir );
+  DBG_OUTPUT_PORT.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
   request->send( 200, "text/html", webText );
   picDir.close();
 
@@ -584,6 +596,7 @@ void asyncHandleDelete( AsyncWebServerRequest *request ) {
     DBG_OUTPUT_PORT.print( "About to DELETE - " );
     DBG_OUTPUT_PORT.println( fileName );
     request->send( 200, "text/plain", webText );
+//    deleteFile( SD_MMC, fileName );
   }
 
 }
