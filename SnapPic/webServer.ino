@@ -4,6 +4,7 @@
 // MIT Licence
 //
 
+// In Progress ..
 String fnOptionVGA( char *str1, char *str2 ) {
 
   String webText;
@@ -37,7 +38,7 @@ String getHTMLRootText( void ) {
   sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr );
   webText += "<br>Time Period " + String( waitTime );
-//  webText += "<p><a href=/setup>Setup</a>";
+  webText += "<p><a href=/setup>Setup</a>";
   webText += "<p><a href=/snaps>Pictures</a>";
   webText += "</body>";
   webText += "</html>";
@@ -104,53 +105,77 @@ typedef enum {
 // placeholder=\"multiple of 10\"
 }
 
-String listDirectoryTry2( File path ) {
+/*
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Cam " + String( AI_CAM_SERIAL ) + "</title>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <link rel='stylesheet' type='text/css' href='mozz.css'>
+ </head>
+ <body>
+  <div class='limiter'>
+   <div class='container-tableCam'>
+    <div class='wrap-tableCam'>
+     <div class='tableCam'>
+      <div class='tableCam-body'>
+       <table>
+        <tbody>
+
+         <tr>
+          <td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>
+          <td class='co2'><a href='/delete?FILENAME=" + linkName + "'>X</a></td>
+          or
+          <td class='co2'>DIR</td>
+         </tr>
+
+        </tbody>
+       </table>
+      </div>
+      <div class='tableCam-foot'>
+       <table>
+        <tfoot>
+         <tr>
+          <th colspan='2'>Number of entries - " + String( numPic ) + "</th>
+         </tr>
+        </tfoot>
+       </table>
+      </div> // tableCam-foot
+     </div>  // tableCam
+    </div>   // wrap-tableCam
+   </div>    // container-tableCam
+  </div>     // limiter
+ </body>
+</html>
+ */
+
+String listDirectoryAsString( File path ) {
 
   String linkName;
   String webText;
   int numPic = 0;
-  listjson_t table;
 
-  table = fnJSONList( path );
-
-}
-
-String listDirectory( File path ) {
-
-  String linkName;
-  String webText;
-  int numPic = 0;
-
-  webText = "<!DOCTYPE html><html><head>";
-  webText += "<title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
-  webText += "<meta charset='UTF-8'>";
-  webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'>";
-  webText += "</head>";
-  webText += "<body>";
-  webText += "<div class='limiter'>";
-  webText += "<div class='container-tableCam'>";
-  webText += "<div class='wrap-tableCam'>";
-  webText += "<div class='tableCam'>";
-  webText += "<div class='tableCam-body'>";
-  webText += "<table><tbody>";
+  webText = "<!DOCTYPE html><html><head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
+  webText += "<body><div class='limiter'><div class='container-tableCam'><div class='wrap-tableCam'>";
+  webText += "<div class='tableCam'><div class='tableCam-body'><table><tbody>";
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
-      webText += "<tr>";
-      webText += "<td class='column1'><a href='" + linkName + "'>" + linkName + "</a></td>";
-      webText += "<td class='column2'>";
+      webText += "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<td class='co2'>";
       if( linkName.endsWith( ".jpg" ) ) {
         webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
       } else {
         webText += "DIR";
       }
-      webText += "</td>";
-      webText += "</tr>";
+      webText += "</td></tr>";
       file.close();
       file = path.openNextFile();
-      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
+//      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
       numPic++;
     }
   }
@@ -163,17 +188,17 @@ String listDirectory( File path ) {
   webText += "</div>"; // wrap-tableCam
   webText += "</div>"; // container-tableCam
   webText += "</div>"; // limiter
-  webText += "</body>";
-  webText += "</html>";
+  webText += "</body></html>";
   return webText;
 
 }
 
-String listDirectory( File path, bool jsonFlag ) {
+String listDirectoryAsJSON( File path ) {
 
   String linkName;
   int numPic = 0;
   String strJSON = "[";
+//  listjson_t table;
 
   if( path.isDirectory() ) {
     File file = path.openNextFile();
@@ -189,17 +214,66 @@ String listDirectory( File path, bool jsonFlag ) {
       strJSON += "\"}";
       file.close();
       file = path.openNextFile();
-      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
+//      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
       numPic++;
     }
   }
   strJSON += "]";
   return strJSON;
 
+//  table = fnJSONList( path );
+
 }
 
 
 /// WebServer Definitions
+
+void listDirectory( File path ) {
+
+  String linkName;
+  String webText;
+  int numPic = 0;
+  unsigned long atStart = millis();
+
+  webServer.setContentLength( CONTENT_LENGTH_UNKNOWN );
+  webServer.send(200, "text/html", "");
+  webText = "<!DOCTYPE html><html><head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
+  webText += "<body><div class='limiter'><div class='container-tableCam'><div class='wrap-tableCam'>";
+  webText += "<div class='tableCam'><div class='tableCam-body'><table><tbody>";
+  webServer.sendContent( webText );
+
+  if( path.isDirectory() ) {
+    File file = path.openNextFile();
+    while( file ) {
+      linkName = String( file.name() );
+      webText = "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<td class='co2'>";
+      if( linkName.endsWith( ".jpg" ) ) {
+        webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
+      } else {
+        webText += "DIR";
+      }
+      webText += "</td></tr>";
+      file.close();
+      webServer.sendContent( webText );
+      file = path.openNextFile();
+//      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
+      numPic++;
+    }
+  }
+
+  webText = "</tbody></table></div><div class='tableCam-foot'><table><tfoot><tr>";
+  webText += "<th colspan='2'>Number of entries - " + String( numPic ) + "</th>";
+  webText += "</tr></tfoot></table></div></div></div></div></div></body></html>";
+  webServer.sendContent( webText );
+
+  unsigned long atEnd = millis();
+  DBG_OUTPUT_PORT.printf( "Time in listDirectory: %u milisec\n", atEnd - atStart );
+  DBG_OUTPUT_PORT.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
+
+}
 
 bool loadFromSDCard( String path ) {
 
@@ -212,12 +286,8 @@ bool loadFromSDCard( String path ) {
     return false;
   }
 
-// NO index.html handling for '/' - maybe TODO later
   if( dataFile.isDirectory() ) {
-//    webText = listDirectory( dataFile );
-//    webServer.send( 200, "text/html", webText );
-    webText = listDirectory( dataFile, true );
-    webServer.send( 200, "application/json", webText );
+    listDirectory( dataFile );
     dataFile.close();
     return true;
   }
@@ -236,15 +306,6 @@ bool loadFromSDCard( String path ) {
 
   dataFile.close();
   return true;
-
-// FIXME - put SD_MMC stuff in separate file !?
-//  listDir(SD_MMC, "/", 0);
-//  removeDir(SD_MMC, "/mydir");
-//  createDir(SD_MMC, "/mydir");
-//  deleteFile(SD_MMC, "/hello.txt");
-//  writeFile(SD_MMC, "/hello.txt", "Hello ");
-//  appendFile(SD_MMC, "/hello.txt", "World!\n");
-//  listDir(SD_MMC, "/", 0);
 
 }
 
@@ -365,8 +426,7 @@ void handlePictures( void ) {
   String webText;
 
   picDir = SD_MMC.open( "/ai-cam" );
-  webText = listDirectory( picDir );
-  webServer.send( 200, "text/html", webText );
+  listDirectory( picDir );
   picDir.close();
 
 }
@@ -457,11 +517,8 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
     return false;
   }
 
-// NO index.html handling for '/' - maybe TODO later - HTML stuff is on SPIFFS
   if( dataFile.isDirectory() ) {
-//    webText = listDirectory( dataFile );
-//    request->send( 200, "text/html", webText );
-    webText = listDirectory( dataFile, true );
+    webText = listDirectoryAsJSON( dataFile );
     request->send( 200, "application/json", webText );
     dataFile.close();
     return true;
@@ -580,10 +637,8 @@ void asyncHandlePictures( AsyncWebServerRequest *request ) {
   File picDir;
   String webText;
 
-  DBG_OUTPUT_PORT.printf( "Heap before listDirectory: %u\n", ESP.getFreeHeap() );
   picDir = SD_MMC.open( "/ai-cam" );
-  webText = listDirectory( picDir );
-  DBG_OUTPUT_PORT.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
+  webText = listDirectoryAsString( picDir );
   request->send( 200, "text/html", webText );
   picDir.close();
 
@@ -695,5 +750,18 @@ void initAsyncWebServer( void ) {
       return request->requestAuthentication();
     request->send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
   });
+
+//    webText = listDirectory( dataFile );
+//    webServer.send( 200, "text/html", webText );
+//    request->send( 200, "text/html", webText );
+//    webServer.send( 200, "application/json", webText );
+
+//  listDir(SD_MMC, "/", 0);
+//  removeDir(SD_MMC, "/mydir");
+//  createDir(SD_MMC, "/mydir");
+//  deleteFile(SD_MMC, "/hello.txt");
+//  writeFile(SD_MMC, "/hello.txt", "Hello ");
+//  appendFile(SD_MMC, "/hello.txt", "World!\n");
+//  listDir(SD_MMC, "/", 0);
 
  */

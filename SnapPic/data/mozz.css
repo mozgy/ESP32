@@ -104,12 +104,12 @@ th, td {
   cursor: pointer;
 }
 
-.column1 {
+.co1 {
   width: 92%;
   padding-left: 8px;
 }
 
-.column2 {
+.co2 {
   width: 8%;
   padding-right: 0px;
   text-align: center;

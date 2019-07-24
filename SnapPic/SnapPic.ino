@@ -21,7 +21,7 @@
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
 
-#define SW_VERSION "1.01.33"
+#define SW_VERSION "1.01.34"
 #define AI_CAM_SERIAL "1"
 
 #define DBG_OUTPUT_PORT Serial
