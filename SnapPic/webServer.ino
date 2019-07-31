@@ -65,13 +65,13 @@ String getHTMLSetupText( void ) {
   webText += "</label>";
   webText += "</div>";
   webText += "<p>Picture Size - <select name='picSize'>";
-  webText += "  <option value='FRAMESIZE_QVGA'>320x240</option>";
-  webText += "  <option value='FRAMESIZE_VGA'>640x480</option>";
-  webText += "  <option value='FRAMESIZE_SVGA'>800x600</option>";
-  webText += "  <option value='FRAMESIZE_XGA' selected>1024x768</option>";
-  webText += "  <option value='FRAMESIZE_SXGA'>1280x1024</option>";
-  webText += "  <option value='FRAMESIZE_UXGA'>1600x1200</option>";
-  webText += "  <option value='FRAMESIZE_QXGA'>2048x1536</option>";
+  webText += " <option value='FRAMESIZE_QVGA'>320x240</option>";
+  webText += " <option value='FRAMESIZE_VGA'>640x480</option>";
+  webText += " <option value='FRAMESIZE_SVGA'>800x600</option>";
+  webText += " <option value='FRAMESIZE_XGA' selected>1024x768</option>";
+  webText += " <option value='FRAMESIZE_SXGA'>1280x1024</option>";
+  webText += " <option value='FRAMESIZE_UXGA'>1600x1200</option>";
+  webText += " <option value='FRAMESIZE_QXGA'>2048x1536</option>";
   webText += "</select>";
   webText += "<p><div>";
   webText += "<label for='timePeriod'>Time Period - </label>";
@@ -179,16 +179,9 @@ String listDirectoryAsString( File path ) {
       numPic++;
     }
   }
-  webText += "</tbody></table></div>";
-  webText += "<div class='tableCam-foot'><table><tfoot>";
-  webText += "<tr><th colspan='2'>Number of entries - " + String( numPic ) + "</th></tr>";
-  webText += "</tfoot></table>";
-  webText += "</div>"; // tableCam-foot
-  webText += "</div>"; // tableCam
-  webText += "</div>"; // wrap-tableCam
-  webText += "</div>"; // container-tableCam
-  webText += "</div>"; // limiter
-  webText += "</body></html>";
+  webText = "</tbody></table></div><div class='tableCam-foot'><table><tfoot><tr>";
+  webText += "<th colspan='2'>Number of entries - " + String( numPic ) + "</th>";
+  webText += "</tr></tfoot></table></div></div></div></div></div></body></html>";
   return webText;
 
 }
@@ -236,7 +229,7 @@ void listDirectory( File path ) {
   unsigned long atStart = millis();
 
   webServer.setContentLength( CONTENT_LENGTH_UNKNOWN );
-  webServer.send(200, "text/html", "");
+  webServer.send( 200, "text/html", "" );
   webText = "<!DOCTYPE html><html><head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
   webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
   webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
@@ -504,6 +497,53 @@ void initWebServer( void ) {
 }
 
 /// AsyncWebServer definitions
+
+void listDirectory( File path, AsyncWebServerRequest *request ) {
+
+  String linkName;
+  String webText;
+  int numPic = 0;
+  unsigned long atStart = millis();
+
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "");
+  response->addHeader("Content-Length", "CONTENT_LENGTH_UNKNOWN");
+  webText = "<!DOCTYPE html><html><head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
+  webText += "<body><div class='limiter'><div class='container-tableCam'><div class='wrap-tableCam'>";
+  webText += "<div class='tableCam'><div class='tableCam-body'><table><tbody>";
+//  request->sendChunked( webText );
+
+  if( path.isDirectory() ) {
+    File file = path.openNextFile();
+    while( file ) {
+      linkName = String( file.name() );
+      webText = "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<td class='co2'>";
+      if( linkName.endsWith( ".jpg" ) ) {
+        webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
+      } else {
+        webText += "DIR";
+      }
+      webText += "</td></tr>";
+      file.close();
+//      request->sendChunked( webText );
+      file = path.openNextFile();
+//      DBG_OUTPUT_PORT.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
+      numPic++;
+    }
+  }
+
+  webText = "</tbody></table></div><div class='tableCam-foot'><table><tfoot><tr>";
+  webText += "<th colspan='2'>Number of entries - " + String( numPic ) + "</th>";
+  webText += "</tr></tfoot></table></div></div></div></div></div></body></html>";
+//  request->send( webText );
+
+  unsigned long atEnd = millis();
+  DBG_OUTPUT_PORT.printf( "Time in listDirectory: %u milisec\n", atEnd - atStart );
+  DBG_OUTPUT_PORT.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
+
+}
 
 bool loadFromSDCard( AsyncWebServerRequest *request ) {
 

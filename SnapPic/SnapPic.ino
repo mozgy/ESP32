@@ -20,6 +20,7 @@
 #include <FS.h>
 #include <SD_MMC.h>
 // #include "driver/rtc_io.h"
+#include "soc/rtc_cntl_reg.h"
 
 #define SW_VERSION "1.01.34"
 #define AI_CAM_SERIAL "1"
@@ -77,11 +78,13 @@ typedef struct{
 
 Ticker tickerSnapPic;
 boolean tickerFired;
+int tickerMissed;
 int waitTime = 60;
 int oldTickerValue;
 
 void flagSnapPicTicker( void ) {
   tickerFired = true;
+  tickerMissed++;
 }
 
 void prnEspStats( void ) {
@@ -219,6 +222,7 @@ void initWiFi( void ) {
   WiFi.softAPdisconnect( true );
   esp_wifi_set_storage(WIFI_STORAGE_RAM);
   WiFi.mode( WIFI_STA );
+  WiFi.setSleep( false );
   WiFi.begin( ssid, password );
 
 
@@ -327,8 +331,8 @@ void getNTPTime( void ) {
 
 void initSDCard( void ) {
 
-//  if( !SD_MMC.begin() ) {
-  if( !SD_MMC.begin( "/sdcard", true ) ) {
+//  if( !SD_MMC.begin() ) { // fast 4bit mode
+  if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
     DBG_OUTPUT_PORT.println( "SD card init failed" );
     return;
   }
@@ -549,6 +553,14 @@ void setup() {
   WiFi.printDiag(Serial); // research this
   DBG_OUTPUT_PORT.println();
 
+  // set these three lines above BEFORE AND AFTER the call to esp_wifi_init
+  // esp_log_level_set("wifi", ESP_LOG_VERBOSE);
+  // esp_wifi_internal_set_log_level(WIFI_LOG_VERBOSE);
+  // esp_wifi_internal_set_log_mod(WIFI_LOG_MODULE_ALL, WIFI_LOG_SUBMODULE_ALL, true);
+
+  // TODO - research this
+  // WRITE_PERI_REG( RTC_CNTL_BROWN_OUT_REG, 0 ); // disable brownout detector
+
   prnEspStats();
 
   if( !SPIFFS.begin() ) {
@@ -573,6 +585,7 @@ void setup() {
 
   initAsyncWebServer();
 
+  tickerMissed = 0;
   tickerSnapPic.attach( waitTime, flagSnapPicTicker );
   tickerFired = true;
   oldTickerValue = waitTime;
@@ -596,6 +609,10 @@ void loop() {
     }
     DBG_OUTPUT_PORT.print( "Frame size set at - " );
     DBG_OUTPUT_PORT.println( foo[picSnapSize] );
+    if( tickerMissed > 1 ) {
+      DBG_OUTPUT_PORT.printf( "Missed %d tickers\n", tickerMissed - 1 );
+    }
+    tickerMissed = 0;
   }
 
 // FIXME - this could be better!
