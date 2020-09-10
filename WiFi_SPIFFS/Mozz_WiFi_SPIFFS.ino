@@ -6,7 +6,7 @@
  *
  */
 
-#define SW_VERSION "0.01.04"
+#define SW_VERSION "0.01.07"
 
 #include <Arduino.h>
 
@@ -34,7 +34,7 @@
 
 #include <Ticker.h>
 Ticker tickerWiFiScan;
-#define WAITTIME 60
+#define WAITTIME 3600
 boolean tickerFired;
 
 char elapsedTimeString[40];
@@ -51,6 +51,14 @@ struct stationData {
   int stationChannel;
   bool stationEncription;
 };
+
+#include "credentials.h"
+const char* host     = "mozgy.t-com.hr";
+const char* urlHost  = "192.168.44.10";
+
+#define WIFI_DISC_DELAY 30000L
+unsigned long wifiWaitTime;
+int wifiSTATries;
 
 //#define WIFIDEBUG
 #undef WIFIDEBUG
@@ -80,31 +88,27 @@ bool update_netdata( int netNum ) {
   int netId;
   int netFound = 0;
 
-  DynamicJsonDocument WiFiDataFile(1200);
+  DynamicJsonDocument WiFiDataFile(4200);
 
 //    fh_netdata.println( "{\"count\":0,\"max\":0}" );
 //    fh_netdata.println( "{\"count\":0,\"max\":0,\"networks\":[{\"ssid\":\"ssid\",\"bssid\":\"bssid\",\"rssi\":0,\"ch\":1,\"enc\":\"*\"}]}" );
 
 // create new data from network list
-  DynamicJsonDocument WiFiData(400);
+  DynamicJsonDocument WiFiData(4000);
   WiFiData[ "count" ] = netNum;
   WiFiData[ "max" ] = netNum;
 
   JsonArray WiFiDataArray  = WiFiData.createNestedArray( "networks" );
 
-  fh_netdata = SPIFFS.open( "/netdata.txt", "r" );
-
-  if ( !fh_netdata ) {
-
-// no last data
+  if ( !SPIFFS.exists( "/netdata.txt" ) ) {
     DBG_OUTPUT_PORT.println( "Data file doesn't exist yet." );
 
-    fh_netdata = SPIFFS.open( "/netdata.txt", "w" );
+    fh_netdata = SPIFFS.open( "/netdata.txt", FILE_WRITE );
     if ( !fh_netdata ) {
       DBG_OUTPUT_PORT.println( "Data file creation failed" );
       return false;
     }
-    for ( int i = 0; i < netNum; ++i ) {
+    for ( int i = 0; i < netNum; i++ ) {
 
       DynamicJsonDocument tmpObj(120);
 
@@ -120,7 +124,7 @@ bool update_netdata( int netNum ) {
       tmpObj[ "enc" ] = ((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
 #endif
 
-      debugPrintJson( "Add - ", WiFiData );
+      debugPrintJson( "Add - ", tmpObj );
 
       WiFiDataArray.add( tmpObj );
 
@@ -128,7 +132,7 @@ bool update_netdata( int netNum ) {
 
   } else {
 
-// read last WiFi data from file
+    fh_netdata = SPIFFS.open( "/netdata.txt", FILE_READ );
     DBG_OUTPUT_PORT.println( "Reading saved wifi data .." );
     line = fh_netdata.readStringUntil('\n');
     DBG_OUTPUT_PORT.print( "Line (read) " );DBG_OUTPUT_PORT.println( line );
@@ -138,6 +142,7 @@ bool update_netdata( int netNum ) {
       DBG_OUTPUT_PORT.print( "parsing failed: " );
       DBG_OUTPUT_PORT.println(error.c_str());
       // parsing failed, removing old data
+      fh_netdata.close();
       SPIFFS.remove( "/netdata.txt" );
       return false;
     }
@@ -147,11 +152,7 @@ bool update_netdata( int netNum ) {
     netId = netMaxFile;
 
     JsonArray tmpArray = WiFiDataFile[ "networks" ];
-//    for ( JsonArray::iterator it = tmpArray.begin(); it != tmpArray.end(); ++it ) {
-//      JsonObject tmpObj = *it;
-//      WiFiDataArray.add( tmpObj );
-//      debugPrintJson( "Copy - ", &tmpObj );
-//    }
+
     for ( JsonVariant item : tmpArray ) {
       WiFiDataArray.add( item );
       // debugPrintJson( "Copy - ", item.as<JsonObject>() );
@@ -211,7 +212,7 @@ bool update_netdata( int netNum ) {
     fh_netdata.close();
     // SPIFFS.remove( "/netdata.txt" );
 
-    fh_netdata = SPIFFS.open( "/netdata.txt", "w" );
+    fh_netdata = SPIFFS.open( "/netdata.txt", FILE_WRITE );
     if ( !fh_netdata ) {
       DBG_OUTPUT_PORT.println( "Data file creation failed" );
       return false;
@@ -319,6 +320,10 @@ void setup() {
 
   prnEspStats();
 
+  delay( 10 );
+  initWiFi();
+  wifiWaitTime = millis();
+
 #ifdef OTA
   initOTA();
 #endif
@@ -336,10 +341,10 @@ void setup() {
 
   SPIFFS.remove( "/netdata.txt" );
 
-  // Set WiFi to station mode and disconnect from an AP if it was previously connected
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
+//  // Set WiFi to station mode and disconnect from an AP if it was previously connected
+//  WiFi.mode(WIFI_STA);
+//  WiFi.disconnect();
+//  delay(100);
 
   tickerWiFiScan.attach( WAITTIME, flagWiFiScan );
   tickerFired = true;

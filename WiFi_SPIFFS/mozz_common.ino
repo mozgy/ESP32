@@ -87,6 +87,37 @@ void fnElapsedStr( char *str ) {
 
 }
 
+void initWiFi( void ) {
+
+  uint8_t connAttempts = 0;
+  uint8_t connAttemptsMAX = 5;
+
+  DBG_OUTPUT_PORT.print( "Connecting to " );
+  DBG_OUTPUT_PORT.println( ssid );
+  WiFi.mode( WIFI_STA );
+  WiFi.begin( );
+  while ( WiFi.waitForConnectResult() != WL_CONNECTED ){
+    WiFi.begin( ssid, password );
+    delay(500);
+    connAttempts++;
+//    DBG_OUTPUT_PORT.println( "Retrying connection..." ); // if connAttempts > 1
+    if ( connAttempts > connAttemptsMAX ) {
+#ifdef DEEPSLEEP
+      DBG_OUTPUT_PORT.println( "Connection Failed! Gonna ..zzZZ" );
+      ESP.deepSleep( sleepTimeSec * 1000000, RF_NO_CAL );
+#endif
+      // if deepsleep is not defined we just reboot
+      // TODO - after MAX attempts create AP for ESP Setup over OTA
+      delay(5000);
+      ESP.restart();
+    }
+  }
+  DBG_OUTPUT_PORT.println( "WiFi connected" );
+  DBG_OUTPUT_PORT.print( "IP address: " );
+  DBG_OUTPUT_PORT.println( WiFi.localIP() );
+
+}
+
 #ifdef OTA
 void initOTA( void ) {
 
