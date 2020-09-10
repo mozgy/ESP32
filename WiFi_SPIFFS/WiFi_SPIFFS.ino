@@ -6,7 +6,7 @@
  *
  */
 
-#define SW_VERSION "0.01.07"
+#define SW_VERSION "0.01.08"
 
 #include <Arduino.h>
 
@@ -34,7 +34,7 @@
 
 #include <Ticker.h>
 Ticker tickerWiFiScan;
-#define WAITTIME 3600
+#define WAITTIME 300
 boolean tickerFired;
 
 char elapsedTimeString[40];
@@ -133,11 +133,12 @@ bool update_netdata( int netNum ) {
   } else {
 
     fh_netdata = SPIFFS.open( "/netdata.txt", FILE_READ );
-    DBG_OUTPUT_PORT.println( "Reading saved wifi data .." );
+    // DBG_OUTPUT_PORT.println( "Reading saved wifi data .." );
     line = fh_netdata.readStringUntil('\n');
-    DBG_OUTPUT_PORT.print( "Line (read) " );DBG_OUTPUT_PORT.println( line );
-
     DeserializationError error = deserializeJson( WiFiDataFile, line );
+    // DBG_OUTPUT_PORT.print( "Line (read) " );DBG_OUTPUT_PORT.println( line );
+    DBG_OUTPUT_PORT.println( "Previous scan -" );serializeJsonPretty( WiFiDataFile, Serial );DBG_OUTPUT_PORT.println();
+
     if ( error ) {
       DBG_OUTPUT_PORT.print( "parsing failed: " );
       DBG_OUTPUT_PORT.println(error.c_str());
@@ -176,8 +177,8 @@ bool update_netdata( int netNum ) {
             DBG_OUTPUT_PORT.print( ", saved RSSI - " );DBG_OUTPUT_PORT.println(rssi2);
             if ( rssi1 > rssi2.toInt() ) {
               strongerRSSI = true;
-              DBG_OUTPUT_PORT.println( "Station signal stronger - TODO - save new data" );
-//              WiFiDataArray[j]["rssi"] = String( rssi1 );
+              DBG_OUTPUT_PORT.println( "Station signal stronger - saving new data" );
+              WiFiDataArray[j]["rssi"] = String( rssi1 );
             }
           }
         }
@@ -227,42 +228,6 @@ bool update_netdata( int netNum ) {
 
 }
 
-bool update_netdata_test( int netNum ) {
-
-  DynamicJsonDocument WiFiData(1000);
-  JsonArray data = WiFiData.createNestedArray( "data" );
-
-  for ( int i = 0; i < netNum; ++i ) {
-    DynamicJsonDocument tmpObj(120);
- 
-    tmpObj["id"] = i;
-    tmpObj["ssid"] = WiFi.SSID(i);
-    tmpObj["bssid"] = bssidToString( WiFi.BSSID(i) );
-    tmpObj["rssi"] = WiFi.RSSI(i);
-    tmpObj["ch"] = WiFi.channel(i);
-#ifdef ESP8266
-    tmpObj["enc"] = ((WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*");
-#endif
-#ifdef ESP32
-    tmpObj["enc"] = ((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
-#endif
-
-//    serializeJson( tmpObj, Serial );
-//    Serial.println();
-//    serializeJsonPretty( tmpObj, Serial );
-//    Serial.println();
-
-    data.add( tmpObj );
-
-  }
-
-  serializeJson( WiFiData, Serial );
-  Serial.println();
-
-  return true;
-
-}
-
 void parse_networks( int netNum ) {
 
 #ifdef WIFIDEBUG
@@ -294,7 +259,7 @@ void parse_networks( int netNum ) {
 void do_wifiscan( void ) {
   int netCount;
 
-  DBG_OUTPUT_PORT.println( "scan start" );
+  DBG_OUTPUT_PORT.print( "Scan start - " );
 
   // WiFi.scanNetworks will return the number of networks found
   netCount = WiFi.scanNetworks();
@@ -339,7 +304,7 @@ void setup() {
 //    DBG_OUTPUT_PORT.println("SPIFFS format failed!");
 //  }
 
-  SPIFFS.remove( "/netdata.txt" );
+//  SPIFFS.remove( "/netdata.txt" );
 
 //  // Set WiFi to station mode and disconnect from an AP if it was previously connected
 //  WiFi.mode(WIFI_STA);
