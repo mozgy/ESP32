@@ -23,6 +23,28 @@ String fnOptionVGA( char *str1, char *str2 ) {
 String getHTMLRootText( void ) {
 
   String webText;
+
+  webText = "<!DOCTYPE html><html>";
+  webText += "<head><title>Cam " + String( AI_CAM_SERIAL ) + "</title>";
+  webText += "<meta charset='UTF-8'>";
+  webText += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<style>body { font-family: 'Comic Sans MS', cursive, sans-serif; }</style>";
+  webText += "</head><body>";
+  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
+  webText += "Software Version " + String( SW_VERSION ) + "<br>";
+  webText += "<p><a href=/stats>Statistics</a>";
+  webText += "<p><a href=/setup>Setup</a>";
+  webText += "<p><a href=/snaps>Pictures</a>";
+  webText += "</body>";
+  webText += "</html>";
+
+  return webText; // TODO - make me pwetty !
+
+}
+
+String getHTMLStatisticsText( void ) {
+
+  String webText;
   char tmpStr[20];
 
   webText = "<!DOCTYPE html><html>";
@@ -38,8 +60,6 @@ String getHTMLRootText( void ) {
   sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr );
   webText += "<br>Time Period " + String( waitTime );
-  webText += "<p><a href=/setup>Setup</a>";
-  webText += "<p><a href=/snaps>Pictures</a>";
   webText += "</body>";
   webText += "</html>";
 
@@ -85,10 +105,11 @@ String getHTMLSetupText( void ) {
   webText += "</html>";
 
   return webText; // TODO - make me pwetty !
+
 /*
 typedef enum {
     FRAMESIZE_QQVGA,    // 160x120
-    FRAMESIZE_QQVGA2,   // 128x160
+    FRAMESIZE_QQVGA2,   // 128x160 // obsolete
     FRAMESIZE_QCIF,     // 176x144
     FRAMESIZE_HQVGA,    // 240x176
     FRAMESIZE_QVGA,     // 320x240
@@ -103,6 +124,18 @@ typedef enum {
 } framesize_t;
  */
 // placeholder=\"multiple of 10\"
+
+}
+
+String getHTMLTFootText( int numPic ) {
+
+  String webText;
+
+  webText = "<div class='tableCam-foot'><table><tfoot><tr><th colspan='2'>Number of entries - " + String( numPic ) + "</th></tr>";
+  webText += "<tr><th colspan='2'>Back to <a href='/'>TOP</a></th></tr></tfoot></table></div>";
+
+  return webText;
+
 }
 
 /*
@@ -179,9 +212,9 @@ String listDirectoryAsString( File path ) {
       numPic++;
     }
   }
-  webText = "</tbody></table></div><div class='tableCam-foot'><table><tfoot><tr>";
-  webText += "<th colspan='2'>Number of entries - " + String( numPic ) + "</th>";
-  webText += "</tr></tfoot></table></div></div></div></div></div></body></html>";
+  webText += "</tbody></table></div>";
+  webText += getHTMLTFootText( numPic );
+  webText += "</div></div></div></div></body></html>";
   return webText;
 
 }
@@ -257,9 +290,9 @@ void listDirectory( File path ) {
     }
   }
 
-  webText = "</tbody></table></div><div class='tableCam-foot'><table><tfoot><tr>";
-  webText += "<th colspan='2'>Number of entries - " + String( numPic ) + "</th>";
-  webText += "</tr></tfoot></table></div></div></div></div></div></body></html>";
+  webText = "</tbody></table></div>";
+  webText += getHTMLTFootText( numPic );
+  webText += "</div></div></div></div></body></html>";
   webServer.sendContent( webText );
 
   unsigned long atEnd = millis();
@@ -341,6 +374,13 @@ void handleInput( void ) {
 void handleRoot( void ) {
 
   String webText = getHTMLRootText();
+  webServer.send( 200, "text/html", webText );
+
+}
+
+void handleStatistics( void ) {
+
+  String webText = getHTMLStatisticsText();
   webServer.send( 200, "text/html", webText );
 
 }
@@ -479,6 +519,7 @@ void initWebServer( void ) {
   webServer.on( "/login", HTTP_GET, handleLogin );
   webServer.on( "/set", HTTP_GET, handleInput );
   webServer.on( "/setup", HTTP_GET, handleSetup );
+  webServer.on( "/stats", HTTP_GET, handleStatistics );
   webServer.on( "/snaps", HTTP_GET, handlePictures );
 
 // handleNotFound serves all *.js and *.css files from SPIFFS
@@ -534,9 +575,9 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
     }
   }
 
-  webText = "</tbody></table></div><div class='tableCam-foot'><table><tfoot><tr>";
-  webText += "<th colspan='2'>Number of entries - " + String( numPic ) + "</th>";
-  webText += "</tr></tfoot></table></div></div></div></div></div></body></html>";
+  webText += "</tbody></table></div>"; // remove + if request->send is uncommented
+  webText += getHTMLTFootText( numPic );
+  webText += "</div></div></div></div></body></html>";
 //  request->send( webText );
 
   unsigned long atEnd = millis();
@@ -613,6 +654,13 @@ void asyncHandleScan( AsyncWebServerRequest *request ) {
 void asyncHandleRoot( AsyncWebServerRequest *request ) {
 
   String webText = getHTMLRootText();
+  request->send( 200, "text/html", webText );
+
+}
+
+void asyncHandleStatistics( AsyncWebServerRequest *request ) {
+
+  String webText = getHTMLStatisticsText();
   request->send( 200, "text/html", webText );
 
 }
@@ -771,6 +819,7 @@ void initAsyncWebServer( void ) {
   asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/setup", HTTP_GET, asyncHandleSetup );
   asyncWebServer.on( "/snaps", HTTP_GET, asyncHandlePictures );
+  asyncWebServer.on( "/stats", HTTP_GET, asyncHandleStatistics );
   asyncWebServer.on( "/startap", HTTP_GET, asyncHandleStartAP );
   asyncWebServer.onNotFound( asyncHandleNotFound );
 

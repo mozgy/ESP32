@@ -22,7 +22,7 @@
 // #include "driver/rtc_io.h"
 #include "soc/rtc_cntl_reg.h"
 
-#define SW_VERSION "1.01.34"
+#define SW_VERSION "1.02.04"
 #define AI_CAM_SERIAL "1"
 
 #define DBG_OUTPUT_PORT Serial
@@ -43,7 +43,6 @@ framesize_t picSnapSize = FRAMESIZE_XGA;
 typedef const String picSizeStrings_t;
 picSizeStrings_t foo[] = {
   "Framesize QQVGA - 160x120",
-  "Framesize QQVGA2 - 128x160",
   "Framesize QCIF - 176x144",
   "Framesize HQVGA - 240x176",
   "Framesize QVGA - 320x240",
@@ -173,8 +172,6 @@ void fnSetFrameSize( String frameSize ) {
 
   if( frameSize == "FRAMESIZE_QQVGA" ) {
     picSnapSize = FRAMESIZE_QQVGA;
-  } else if( frameSize == "FRAMESIZE_QQVGA2" ) {
-    picSnapSize = FRAMESIZE_QQVGA2;
   } else if( frameSize == "FRAMESIZE_QCIF" ) {
     picSnapSize = FRAMESIZE_QCIF;
   } else if( frameSize == "FRAMESIZE_HQVGA" ) {
@@ -221,7 +218,10 @@ void initWiFi( void ) {
 
   WiFi.softAPdisconnect( true );
   esp_wifi_set_storage(WIFI_STORAGE_RAM);
+  uint32_t brown_reg_temp = READ_PERI_REG(RTC_CNTL_BROWN_OUT_REG);
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   WiFi.mode( WIFI_STA );
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, brown_reg_temp);
   WiFi.setSleep( false );
   WiFi.begin( ssid, password );
 
@@ -242,8 +242,6 @@ void initWiFi( void ) {
  */
 // FIXME - this could be better!
 
-
-
 /* SOME ADVICE
 atanisoft@atanisoft17:15
 you can achieve the same with WiFi lib though :)
@@ -252,6 +250,13 @@ WiFi.onEvent([](system_event_id_t event) {
   WiFi.disconnect();
   WiFi.begin();
 }, SYSTEM_EVENT_STA_LOST_IP);
+ */
+
+/* https://github.com/espressif/arduino-esp32/issues/863
+uint32_t brown_reg_temp = READ_PERI_REG(RTC_CNTL_BROWN_OUT_REG); //save WatchDog register
+WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+WiFi.mode(WIFI_MODE_STA); // turn on WiFi
+WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, brown_reg_temp); //enable brownout detector
  */
 
   WiFi.scanNetworks(true);
