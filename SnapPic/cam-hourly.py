@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# v0.16
+# v1.01
 
 import os
 import tempfile
@@ -11,19 +11,12 @@ import subprocess
 
 camIP = '192.168.1.66'    # Cam1
 
-time_now = datetime.datetime.now()
-#time_one_hour_ago = time_now - datetime.timedelta( hours = 1 )
-#time_yesterday = time_now - datetime.timedelta( hours = 24 )
-today = time_now.strftime( "%m%d" )
-#yesterday = time_yesterday.strftime( "%m%d" )
-hour = time_now.strftime( "%H" )
-#hour_ago = time_one_hour_ago.strftime( "%H" )
 
 def encode_hour( f_year, f_day, f_hour ):
 
   cmd_call = 'wget --quiet --recursive --no-directories --no-host-directories --timestamping --level=1 --accept="PIC*jpg" "http://{}/ai-cam/{}/{}"'.format( camIP, f_day, f_hour )
-  subprocess.call( cmd_call, shell=True )
-  # print( cmd_call )
+  # subprocess.call( cmd_call, shell=True )
+  print( cmd_call )
 
   file_list = ''
   aicam_dir = os.getcwd()
@@ -34,8 +27,6 @@ def encode_hour( f_year, f_day, f_hour ):
     if aicam_fn.startswith( 'PIC-{}{}{}'.format( f_year, f_day, f_hour ) ) and aicam_fn.endswith( 'jpg' ):
 
       aicam_image = cv2.imread( os.path.join( aicam_dir, aicam_fn ) )
-      # aicam_image_h, aicam_image_w = aicam_image.shape[:2]
-      # aicam_gray = cv2.cvtColor( aicam_image, cv2.COLOR_BGR2GRAY )
       aicam_average = numpy.average( aicam_image )
 
       if aicam_average > 5:
@@ -43,24 +34,28 @@ def encode_hour( f_year, f_day, f_hour ):
 
       continue
 
-  # cmd_call = 'cat {} | ffmpeg -f image2pipe -i - /var/www/html/Cam/cam1-{}{}.mkv'.format( file_list, f_day, f_hour )
-  cmd_call = 'cat {} | ffmpeg -f image2pipe -i - cam1-{}{}.mkv'.format( file_list, f_day, f_hour )
-  subprocess.call( cmd_call, shell=True )
-  # print( cmd_call )
+  if file_list != '':
+
+    cmd_call = 'cat {} | ffmpeg -f image2pipe -i - cam1-{}{}.mkv'.format( file_list, f_day, f_hour )
+    # subprocess.call( cmd_call, shell=True )
+    print( cmd_call )
 
 
-def fetch_whole_day( f_day ):
+
+def fetch_whole_day( f_year, f_day ):
 
   for i_hour in range( 24 ):
     f_hour = '{:02}'.format( i_hour )
-    encode_hour( '2021', f_day, f_hour )
+    encode_hour( f_year, f_day, f_hour )
 
 
 
 ### Main loop
 
-# fetch_whole_day( '0508' )
-encode_hour( '2021', '0506', '05' )
-
-
+time_now = datetime.datetime.now()
+time_one_hour_ago = time_now - datetime.timedelta( hours = 1 )
+hour = time_one_hour_ago.strftime( "%H" )
+day = time_one_hour_ago.strftime( "%m%d" )
+year = time_one_hour_ago.strftime( "%Y" )
+encode_hour( year, day, hour )
 
