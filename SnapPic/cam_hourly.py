@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-# v1.01
+#
+# v1.03
+#
 
 import os
 import tempfile
@@ -14,9 +16,14 @@ camIP = '192.168.1.66'    # Cam1
 
 def encode_hour( f_year, f_day, f_hour ):
 
+  ## Fix_01?
+  if not os.path.exists( f_day ):
+    os.makedirs( f_day )
+  os.chdir( './{}'.format( f_day ) )
+
   cmd_call = 'wget --quiet --recursive --no-directories --no-host-directories --timestamping --level=1 --accept="PIC*jpg" "http://{}/ai-cam/{}/{}"'.format( camIP, f_day, f_hour )
-  # subprocess.call( cmd_call, shell=True )
-  print( cmd_call )
+  subprocess.call( cmd_call, shell=True )
+  # print( cmd_call )
 
   file_list = ''
   aicam_dir = os.getcwd()
@@ -36,10 +43,12 @@ def encode_hour( f_year, f_day, f_hour ):
 
   if file_list != '':
 
-    cmd_call = 'cat {} | ffmpeg -f image2pipe -i - cam1-{}{}.mkv'.format( file_list, f_day, f_hour )
-    # subprocess.call( cmd_call, shell=True )
-    print( cmd_call )
+    cmd_call = 'cat {} | ffmpeg -f image2pipe -i - ../cam1-{}{}.mkv'.format( file_list, f_day, f_hour )
+    subprocess.call( cmd_call, shell=True )
+    # print( cmd_call )
 
+  ## Fix_01?
+  os.chdir( '..' )
 
 
 def fetch_whole_day( f_year, f_day ):
@@ -49,8 +58,7 @@ def fetch_whole_day( f_year, f_day ):
     encode_hour( f_year, f_day, f_hour )
 
 
-
-### Main loop
+### Main Loop
 
 time_now = datetime.datetime.now()
 time_one_hour_ago = time_now - datetime.timedelta( hours = 1 )
