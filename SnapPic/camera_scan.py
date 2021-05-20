@@ -1,30 +1,37 @@
 #!/usr/bin/python
 
 #
-# v1.05
+# v1.11
 #
 
-import os
-import tempfile
-import cv2
-import numpy
+import os, tempfile, subprocess
+import sys, getopt
 import datetime
-import subprocess
 
-camIP = '192.168.1.66'    # Cam1
+camIP1 = '192.168.1.66'
+camIP2 = '192.168.1.67'
+camIP3 = '192.168.1.68'
+camIP4 = '192.168.1.69'
+camIP = camIP1
 
+check_mode = False
+
+storage_dir = '/var/www/html/Pictures'
 
 def encode_hour( f_year, f_day, f_hour ):
 
-  ## Fix_01?
+  import cv2, numpy
+
   pic_dir = '{}{}'.format( f_year, f_day )
   if not os.path.exists( pic_dir ):
     os.makedirs( pic_dir )
   os.chdir( './{}'.format( pic_dir ) )
 
   cmd_call = 'wget --quiet --recursive --no-directories --no-host-directories --timestamping --level=1 --accept="PIC*jpg" "http://{}/ai-cam/{}/{}"'.format( camIP, f_day, f_hour )
-  subprocess.call( cmd_call, shell=True )
-  # print( cmd_call )
+  if check_mode:
+    print( cmd_call )
+  else:
+    subprocess.call( cmd_call, shell=True )
 
   file_list = ''
   aicam_dir = os.getcwd()
@@ -45,10 +52,11 @@ def encode_hour( f_year, f_day, f_hour ):
   if file_list != '':
 
     cmd_call = 'cat {} | ffmpeg -f image2pipe -i - ../cam1-{}{}.mkv'.format( file_list, f_day, f_hour )
-    subprocess.call( cmd_call, shell=True )
-    # print( cmd_call )
+    if check_mode:
+      print( cmd_call )
+    else:
+      subprocess.call( cmd_call, shell=True )
 
-  ## Fix_01?
   os.chdir( '..' )
 
 
@@ -73,8 +81,10 @@ def encode_day( f_year, f_day ):
       tmp.write( file_list )
 
     cmd_call = 'ffmpeg -f concat -safe 0 -i {} -c copy {}/cam1-{}{}.mkv'.format( f_path, aicam_dir, f_year, f_day )
-    subprocess.call( cmd_call, shell=True )
-    # print( cmd_call )
+    if check_mode:
+      print( cmd_call )
+    else:
+      subprocess.call( cmd_call, shell=True )
 
     os.remove( f_path )
 
@@ -89,13 +99,61 @@ def fetch_whole_day( f_year, f_day ):
   encode_day( f_year, f_day )
 
 
+
 ### Main Loop
 
-time_now = datetime.datetime.now()
-time_one_hour_ago = time_now - datetime.timedelta( hours = 1 )
-hour = time_one_hour_ago.strftime( "%H" )
-day = time_one_hour_ago.strftime( "%m%d" )
-year = time_one_hour_ago.strftime( "%Y" )
+full_cmd_list = sys.argv
+argument_list = full_cmd_list[1:]
+short_options = 'htm:d:o:c:'
+long_options = [ 'help', 'test', 'mode=', 'date=', 'output=', 'camera=' ]
 
-encode_hour( year, day, hour )
+mode = ''
+
+try:
+  args, vals = getopt.getopt( argument_list, short_options, long_options )
+  for curr_arg, curr_val in args:
+    # print( 'for loop: {}.{}'.format( curr_arg, curr_val ) )
+    if curr_arg in ( '-h', '--help' ):
+      print( 'ToDo: print help' )
+
+    elif curr_arg in ( '-t', '--test' ):
+      check_mode = True
+      print( 'Check-no-exe mode active!' )
+
+    elif curr_arg in ( '-m', '--mode' ):
+      mode = curr_val
+
+    elif curr_arg in ( '-d', '--date' ):
+      fetch_date = curr_val
+
+    elif curr_arg in ( "-o", "--output" ):
+      storage_dir = curr_val
+
+    elif curr_arg in ( "-c", "--camera" ):
+      cam_num = curr_val
+
+except getopt.error as err:
+  print( str( err ) )
+  sys.exit( 2 )
+
+os.chdir( storage_dir )
+
+time_now = datetime.datetime.now()
+
+if mode == 'hourly':
+  time_ago = time_now - datetime.timedelta( hours = 1 )
+  hour = time_ago.strftime( "%H" )
+  day = time_ago.strftime( "%m%d" )
+  year = time_ago.strftime( "%Y" )
+  encode_hour( year, day, hour )
+elif mode == 'daily':
+  time_ago = time_now - datetime.timedelta( hours = 24 )
+  hour = time_ago.strftime( "%H" )
+  day = time_ago.strftime( "%m%d" )
+  year = time_ago.strftime( "%Y" )
+  encode_day( year, day )
+elif mode == 'fetch':
+  print( 'TODO - fetch mode if' )
+else:
+  print( 'Correct Mode Missing' )
 
