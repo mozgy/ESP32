@@ -14,7 +14,6 @@
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <Ticker.h>
-#include <ArduinoOTA.h>
 #include <time.h>
 #include <SPIFFS.h>
 #include <FS.h>
@@ -22,8 +21,11 @@
 // #include "driver/rtc_io.h"
 #include "soc/rtc_cntl_reg.h"
 
-#define SW_VERSION "1.02.04"
-#define AI_CAM_SERIAL "1"
+#include "variables.h"
+#include "credentials.h"
+
+#define SW_VERSION "1.03.05"
+#define AI_CAM_SERIAL "2"
 
 #define DBG_OUTPUT_PORT Serial
 
@@ -38,37 +40,20 @@
 // DATA1 / Flash LED - PIN4
 #define FLASH_LED 4
 #define FLASH_ENABLE true
-bool flashEnable = false;
-framesize_t picSnapSize = FRAMESIZE_XGA;
-typedef const String picSizeStrings_t;
-picSizeStrings_t foo[] = {
-  "Framesize QQVGA - 160x120",
-  "Framesize QCIF - 176x144",
-  "Framesize HQVGA - 240x176",
-  "Framesize QVGA - 320x240",
-  "Framesize CIF - 400x296",
-  "Framesize VGA - 640x480",
-  "Framesize SVGA - 800x600",
-  "Framesize XGA - 1024x768",
-  "Framesize SXGA - 1280x1024",
-  "Framesize UXGA - 1600x1200",
-  "Framesize QXGA - 2048x1536"
-};
 
-#include "credentials.h"
-#define WIFI_DISC_DELAY 30000L
-unsigned long wifiWaitTime;
-int wifiSTATries;
+#ifdef USE_BUILTIN_OTA
+  #include <ArduinoOTA.h>
+#endif
+#ifdef USE_ELEGANT_OTA
+  #include <AsyncElegantOTA.h>
+#endif
 
-long timeZone = 1;
-byte daySaveTime = 1;
-struct tm tmstruct;
-
-char elapsedTimeString[40];
-char currentDateTime[17];
-
+#ifdef USE_BUILTIN_WEBSERVER
 WebServer webServer(80);
-AsyncWebServer asyncWebServer(8080);
+#endif
+#ifdef USE_ASYNC_WEBSERVER
+AsyncWebServer asyncWebServer(80);
+#endif
 
 typedef struct{
   String listJSON;
@@ -113,7 +98,8 @@ void prnEspStats( void ) {
 
 void fnElapsedStr( char *str ) {
 
-  unsigned long sec, minute, hour;
+  unsigned long sec;
+  int minute, hour;
 
   sec = millis() / 1000;
   minute = ( sec % 3600 ) / 60;
@@ -214,7 +200,7 @@ void waitForConnect ( unsigned long timeout ) {
 void initWiFi( void ) {
 
   wifiSTATries = 1;
-  bool wifiNoSTA = false;
+  // bool wifiNoSTA = false;
 
   WiFi.softAPdisconnect( true );
   esp_wifi_set_storage(WIFI_STORAGE_RAM);
@@ -263,14 +249,16 @@ WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, brown_reg_temp); //enable brownout detect
 
 }
 
+#ifdef USE_BUILTIN_OTA
 void initOTA( void ) {
 
   // Port defaults to 3232
   // ArduinoOTA.setPort( 3232 );
 
   // Hostname defaults to esp3232-[MAC]
-  // add AI_CAM_SERIAL suffix
-  ArduinoOTA.setHostname( "mozz-esp32-ai-1" );
+  // ArduinoOTA.setHostname( "mozz-esp32-ai-1" );
+  String tmpCamSerial = "mozz-esp32-ai-" + String( AI_CAM_SERIAL );
+  ArduinoOTA.setHostname( tmpCamSerial.c_str() );
 
   // No authentication by default
   // ArduinoOTA.setPassword( "admin" );
@@ -308,22 +296,23 @@ void initOTA( void ) {
   ArduinoOTA.begin();
 
 }
+#endif
 
 void getNTPTime( void ) {
 
-  DBG_OUTPUT_PORT.println( "Contacting Time Server" );
+  DBG_OUTPUT_PORT.print( "Contacting Time Server - " );
 //  configTime( 3600*timeZone, daySaveTime*3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org" );
   configTime( 3600*timeZone, daySaveTime*3600, "tik.t-com.hr", "tak.t-com.hr" );
   delay( 2000 );
   tmstruct.tm_year = 0;
   getLocalTime( &tmstruct, 5000 );
   while( tmstruct.tm_year == 70 ) {
-    DBG_OUTPUT_PORT.println( "NTP failed, trying again .." );
+    DBG_OUTPUT_PORT.print( "NTP failed, trying again .. " );
     // configTime( 3600*timeZone, daySaveTime*3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org" );
     delay( 5000 );
     getLocalTime( &tmstruct, 5000 );
   }
-  DBG_OUTPUT_PORT.printf( "Now is : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year)+1900, (tmstruct.tm_mon)+1, tmstruct.tm_mday, tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
+  DBG_OUTPUT_PORT.printf( "Local Time : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year)+1900, (tmstruct.tm_mon)+1, tmstruct.tm_mday, tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
 
 //  // yes, I know it can be oneliner -
 //  sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
@@ -435,23 +424,6 @@ void initCam( void ) {
 //  s->set_vflip( s, 1 );
 //
   s->set_framesize( s, picSnapSize );
-/*
-typedef enum {
-    FRAMESIZE_QQVGA,    // 160x120
-    FRAMESIZE_QQVGA2,   // 128x160
-    FRAMESIZE_QCIF,     // 176x144
-    FRAMESIZE_HQVGA,    // 240x176
-    FRAMESIZE_QVGA,     // 320x240
-    FRAMESIZE_CIF,      // 400x296
-    FRAMESIZE_VGA,      // 640x480
-    FRAMESIZE_SVGA,     // 800x600
-    FRAMESIZE_XGA,      // 1024x768
-    FRAMESIZE_SXGA,     // 1280x1024
-    FRAMESIZE_UXGA,     // 1600x1200
-    FRAMESIZE_QXGA,     // 2048*1536
-    FRAMESIZE_INVALID
-} framesize_t;
- */
 
 }
 
@@ -577,6 +549,7 @@ void setup() {
   wifiWaitTime = millis();
 
   getNTPTime();
+  DBG_OUTPUT_PORT.println( WiFi.localIP() );
 
   delay( 1000 );
   initCam();
@@ -584,11 +557,18 @@ void setup() {
 
   initSDCard();
 
+#ifdef USE_BUILTIN_WEBSERVER
   initOTA();
 
   initWebServer();
+#endif
+
+#ifdef USE_ASYNC_WEBSERVER
+  // AsyncElegantOTA.begin( &asyncWebServer );
+  AsyncElegantOTA.begin( &asyncWebServer, http_username, http_password );
 
   initAsyncWebServer();
+#endif
 
   tickerMissed = 0;
   tickerSnapPic.attach( waitTime, flagSnapPicTicker );
@@ -599,8 +579,14 @@ void setup() {
 
 void loop() {
 
+#ifdef USE_BUILTIN_WEBSERVER
   ArduinoOTA.handle();
   webServer.handleClient();
+#endif
+
+#ifdef USE_ASYNC_WEBSERVER
+  // AsyncElegantOTA.loop(); // deprecated
+#endif
 
   if( tickerFired ) {
     tickerFired = false;
