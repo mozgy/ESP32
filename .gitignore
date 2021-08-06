@@ -3,3 +3,4 @@ build/
 SnapPic/credentials.h
 SnapPic/ScratchPad
 WiFi_SPIFFS/credentials.h
+SnapPic/include/credentials.h
