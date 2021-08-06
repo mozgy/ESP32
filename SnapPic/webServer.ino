@@ -4,7 +4,10 @@
 // MIT Licence
 //
 
+#include "variables.h"
+
 /// WebServer Definitions
+#ifdef USE_BUILTIN_WEBSERVER
 
 void listDirectory( File path ) {
 
@@ -272,6 +275,7 @@ void initWebServer( void ) {
   webServer.on( "/set", HTTP_GET, handleInput );
   webServer.on( "/setup", HTTP_GET, handleSetup );
   webServer.on( "/stats", HTTP_GET, handleStatistics );
+  webServer.on( "/pictures", HTTP_GET, handlePictures );
   webServer.on( "/snaps", HTTP_GET, handlePictures );
 
 // handleNotFound serves all *.js and *.css files from SPIFFS
@@ -288,3 +292,5 @@ void initWebServer( void ) {
  */
 
 }
+
+#endif

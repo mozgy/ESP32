@@ -4,7 +4,10 @@
 // MIT Licence
 //
 
-/// AsyncWebServer definitions
+#include "variables.h"
+
+/// AsyncWebServer Definitions
+#ifdef USE_ASYNC_WEBSERVER
 
 void listDirectory( File path, AsyncWebServerRequest *request ) {
 
@@ -26,7 +29,7 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
     File file = path.openNextFile();
     while( file ) {
       linkName = String( file.name() );
-      webText = "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      webText += "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
       webText += "<td class='co2'>";
       if( linkName.endsWith( ".jpg" ) ) {
         webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
@@ -45,7 +48,7 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
   webText += "</tbody></table></div>"; // remove + if request->send is uncommented
   webText += getHTMLTFootText( numPic );
   webText += "</div></div></div></div></body></html>";
-//  request->send( webText );
+  request->send( 200, "text/html", webText );
 
   unsigned long atEnd = millis();
   DBG_OUTPUT_PORT.printf( "Time in listDirectory: %lu milisec\n", atEnd - atStart );
@@ -66,8 +69,9 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   }
 
   if( dataFile.isDirectory() ) {
-    webText = listDirectoryAsJSON( dataFile );
-    request->send( 200, "application/json", webText );
+    // webText = listDirectoryAsJSON( dataFile );
+    // request->send( 200, "application/json", webText );
+    listDirectory( dataFile, request );
     dataFile.close();
     return true;
   }
@@ -113,7 +117,7 @@ void asyncHandleScan( AsyncWebServerRequest *request ) {
     }
   }
   json += "]";
-  request->send(200, "application/json", json);
+  request->send( 200, "application/json", json );
   json = String();
 
 }
@@ -190,11 +194,10 @@ void asyncHandleInput( AsyncWebServerRequest *request ) {
 void asyncHandlePictures( AsyncWebServerRequest *request ) {
 
   File picDir;
-  String webText;
 
   picDir = SD_MMC.open( "/ai-cam" );
-  webText = listDirectoryAsString( picDir );
-  request->send( 200, "text/html", webText );
+  // listDirectoryAsString( picDir );
+  listDirectory( picDir, request );
   picDir.close();
 
 }
@@ -295,30 +298,4 @@ void initAsyncWebServer( void ) {
 
 }
 
-/*
-
-  asyncWebServer.on( "/", HTTP_GET, []( AsyncWebServerRequest *request ){
-    String webText = getHTMLRootText();
-    request->send( 200, "text/html", webText );
-  });
-
-  asyncWebServer.on( "/login", HTTP_GET, []( AsyncWebServerRequest *request ){
-    if( !request->authenticate( http_username, http_password ) )
-      return request->requestAuthentication();
-    request->send( 200, "text/html", "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='10; URL=/setup'></head><body>Login Success!</body></html>" );
-  });
-
-//    webText = listDirectory( dataFile );
-//    webServer.send( 200, "text/html", webText );
-//    request->send( 200, "text/html", webText );
-//    webServer.send( 200, "application/json", webText );
-
-//  listDir(SD_MMC, "/", 0);
-//  removeDir(SD_MMC, "/mydir");
-//  createDir(SD_MMC, "/mydir");
-//  deleteFile(SD_MMC, "/hello.txt");
-//  writeFile(SD_MMC, "/hello.txt", "Hello ");
-//  appendFile(SD_MMC, "/hello.txt", "World!\n");
-//  listDir(SD_MMC, "/", 0);
-
- */
+#endif
