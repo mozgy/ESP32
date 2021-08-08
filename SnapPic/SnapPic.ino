@@ -24,7 +24,7 @@
 #include "variables.h"
 #include "credentials.h"
 
-#define SW_VERSION "1.03.05"
+#define SW_VERSION "1.03.09"
 #define AI_CAM_SERIAL "2"
 
 #define DBG_OUTPUT_PORT Serial

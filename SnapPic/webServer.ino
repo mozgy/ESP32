@@ -34,7 +34,7 @@ void listDirectory( File path ) {
       if( linkName.endsWith( ".jpg" ) ) {
         webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
       } else {
-        webText += "DIR";
+        webText += "DIR"; // ToDo - add weblink to delete whole dir
       }
       webText += "</td></tr>";
       file.close();
@@ -196,9 +196,15 @@ void handleDeleteSDCardFile( void ) {
 
   if( webServer.hasArg( "FILENAME" ) ) {
     String fileName = webServer.arg( "FILENAME" );
-    webText = "About to DELETE - " + String( fileName );
-    DBG_OUTPUT_PORT.print( "About to DELETE - " );
-    DBG_OUTPUT_PORT.println( fileName );
+    if( SD_MMC.remove( fileName.c_str() ) ) {
+      webText = "Deleted - " + String( fileName );
+      DBG_OUTPUT_PORT.print( "Deleted - " );
+      DBG_OUTPUT_PORT.println( fileName );
+    } else {
+      webText = "Cannot delete - " + String( fileName );
+      DBG_OUTPUT_PORT.print( "Cannot delete - " );
+      DBG_OUTPUT_PORT.println( fileName );
+    }
   } else {
     webText = "Nothing To Do !";
     DBG_OUTPUT_PORT.println( "Nothing To Do !" );
