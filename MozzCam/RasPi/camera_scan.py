@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# v1.11
+# v1.12
 #
 
 import os, tempfile, subprocess
@@ -16,7 +16,6 @@ camIP = camIP1
 
 check_mode = False
 
-storage_dir = '/var/www/html/Pictures'
 
 def encode_hour( f_year, f_day, f_hour ):
 
@@ -100,6 +99,19 @@ def fetch_whole_day( f_year, f_day ):
 
 
 
+def delete_hour( f_year, f_day, f_hour ):
+
+  cmd_call = 'curl "http://{}/ai-cam/{}/{}"'.format( camIP, f_day, f_hour )
+  if check_mode:
+    print( cmd_call )
+  else:
+    subprocess.call( cmd_call, shell=True )
+
+  cmd_list = cmd_call.partition( "href=" )
+  print( cmd_list )
+
+
+
 ### Main Loop
 
 full_cmd_list = sys.argv
@@ -108,6 +120,7 @@ short_options = 'htm:d:o:c:'
 long_options = [ 'help', 'test', 'mode=', 'date=', 'output=', 'camera=' ]
 
 mode = ''
+fetch_date = '00-00-0000'
 
 try:
   args, vals = getopt.getopt( argument_list, short_options, long_options )
@@ -124,7 +137,7 @@ try:
       mode = curr_val
 
     elif curr_arg in ( '-d', '--date' ):
-      fetch_date = curr_val
+      fetch_date = check_date( curr_val )
 
     elif curr_arg in ( "-o", "--output" ):
       storage_dir = curr_val
@@ -136,6 +149,10 @@ except getopt.error as err:
   print( str( err ) )
   sys.exit( 2 )
 
+if check_mode:
+  storage_dir = '/var/www/html/Pictures'
+else:
+  storage_dir = '/tmp'
 os.chdir( storage_dir )
 
 time_now = datetime.datetime.now()
@@ -145,15 +162,18 @@ if mode == 'hourly':
   hour = time_ago.strftime( "%H" )
   day = time_ago.strftime( "%m%d" )
   year = time_ago.strftime( "%Y" )
+  print( 'Processing Time - {}-{}-{}'.format( hour, day, year ) )
   encode_hour( year, day, hour )
 elif mode == 'daily':
   time_ago = time_now - datetime.timedelta( hours = 24 )
   hour = time_ago.strftime( "%H" )
   day = time_ago.strftime( "%m%d" )
   year = time_ago.strftime( "%Y" )
+  print( 'Processing Time - {}-{}-{}'.format( hour, day, year ) )
   encode_day( year, day )
 elif mode == 'fetch':
   print( 'TODO - fetch mode if' )
+elif mode == 'delete':
+  delete_hour( '2021', '0430', '20' )
 else:
   print( 'Correct Mode Missing' )
-
