@@ -30,7 +30,7 @@ String photoFrame;
 framesize_t picFrameSize = PIC_SNAP_SIZE;
 
 bool flashEnabled = FLASHENABLED;
-bool timeLapse = TIMELAPSE;
+bool timeLapse = TIMELAPSEMODE;
 
 Ticker tickerSnapPic;
 boolean tickerFired;
@@ -271,11 +271,8 @@ void loop() {
     int wifiStatus;
     tickerFired = false;
 #ifdef HAVE_CAMERA
-    // flashON(); delay( 75 ); flashOFF();
-    doSnapPhoto();
-//    doSnapPic();  // timelapse thingy ..
+    doSnapSavePhoto();
 #endif
-    // prnEspStats();
     wifiStatus = WiFi.status();
     Serial.println( get_wifi_status( wifiStatus ) );
     Serial.print( "Signal Strength (RSSI): " );
@@ -292,8 +289,6 @@ void loop() {
       tickerSnapPic.attach( waitTime, flagSnapPicTicker );
       oldTickerValue = waitTime;
     }
-    Serial.print( "Frame size set at - " );
-    Serial.println( foo[picFrameSize] );  // FIXME - wrong par used
     if( tickerMissed > 1 ) {
       Serial.printf( "Missed %d tickers\n", tickerMissed - 1 );
     }

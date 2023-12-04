@@ -178,7 +178,8 @@ void asyncHandleCapture( AsyncWebServerRequest *request ) {
     value = arg->value().c_str();
     // ToDo something with this timestamp value
   }
-  doSnapPhoto();
+  if( !timeLapse )  // if on timelapse mode just take last photo taken
+    doSnapSavePhoto();
   AsyncWebServerResponse *response = request->beginResponse( 200, "image/jpeg", photoFrame );
   response->addHeader( "Content-Disposition", "inline; filename=photo.jpg" );
   response->addHeader( "Access-Control-Allow-Origin", "*" );
@@ -330,24 +331,6 @@ void asyncHandlePicture( AsyncWebServerRequest *request ) {
   } else {
     webText += "flashOff";
   }
-/*
-  webText += " - ";
-  if( hMirrorOn ) {
-    webText += "hMirror";
-  }
-  webText += " - ";
-  if( vFlipOn ) {
-    webText += "vFlip";
-  }
-  webText += " - ";
-  if( lensCorOn ) {
-    webText += "lensCor";
-  }
-  webText += " - ";
-  if( expCtrlOn ) {
-    webText += "expCtrl";
-  }
-  */
 //  webText += String( picFrameSize );
   webText += " !</body></html>";   // width="128" height="128"
   Serial.print( "Captured len - " );

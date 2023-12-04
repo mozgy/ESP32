@@ -14,7 +14,7 @@ void asyncHandleFullSetup( AsyncWebServerRequest *request );
 void asyncHandleLogin( AsyncWebServerRequest *request );
 void asyncHandleNotFound( AsyncWebServerRequest *request );
 void initAsyncWebServer( void );
-void doSnapPhoto( void );
+void doSnapSavePhoto( void );
 
 String getHTMLRootText( void );
 String getHTMLStatisticsText( void );

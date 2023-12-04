@@ -277,10 +277,45 @@ void flashLED( uint32_t flashONTime ) {
 
 }
 
-void doSnapPhoto( void ) {
+// void doSnapPhoto( void ) {
+void doSnapSavePhoto( void ) {
 
+  File photoFP;
+  String photoFileDir;
+  String photoFileName;
   camera_fb_t * photoFrameBuffer = NULL;
+  struct tm tmstruct;
+  tmstruct.tm_year = 0;
   photoFrame = "";
+
+  if( timeLapse ) {
+    getLocalTime( &tmstruct, 5000 );
+
+    sprintf( currentDateTime, "%02d", (tmstruct.tm_mon)+1 );
+    sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_mday );
+    photoFileDir = String( "/mozz-cam/" ) + currentDateTime;
+    // TODO-FIXME - maybe only one subdir ??
+    SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
+    sprintf( currentDateTime, "/%02d\0", tmstruct.tm_hour );
+    photoFileDir += String( currentDateTime );
+    SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
+
+    // yes, I know it can be oneliner -
+    sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
+    sprintf( currentDateTime, "%s%02d", currentDateTime, (tmstruct.tm_mon)+1 );
+    sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_mday );
+    sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_hour );
+    sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_min );
+    sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_sec );
+    photoFileName = photoFileDir + String( "/PIC-" ) + currentDateTime + String( ".jpg" ) ;
+    Serial.println( photoFileName );
+
+    photoFP = SD_MMC.open( photoFileName, FILE_WRITE );
+    if( !photoFP ) {
+      Serial.println( "error opening file for picture" );
+      return;
+    }
+  }
 
   flashON();
   if( flashEnabled )
@@ -300,80 +335,30 @@ void doSnapPhoto( void ) {
   // if (fb->format == PIXFORMAT_JPEG) // ToDo Check, JPEG mandatory
 
   size_t photoFrameLength = photoFrameBuffer->len;
+  Serial.print( "Picture length : " );
+  Serial.println( photoFrameLength );
   for( size_t i = 0; i < photoFrameLength; i++ ) {
     photoFrame += (char) photoFrameBuffer->buf[ i ];
   }
 
   //  //replace this with your own function
   //  process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
- 
+  if( timeLapse ) {
+    photoFP.write( photoFrameBuffer->buf, photoFrameLength );
+    //  Serial.println( "Wrote file .." );
+  }
+
   //return the frame buffer back to the driver for reuse
   esp_camera_fb_return( photoFrameBuffer );
   photoFrameBuffer = NULL;
 
+  if( timeLapse ) {
+    photoFP.close();
+  }
+
   int64_t capture_end = esp_timer_get_time();
   Serial.printf("Capture Time: %uB %ums\r\n", (uint32_t)( photoFrameLength ), (uint32_t)( ( capture_end - capture_start )/1000 ) );
-
-}
-
-void doSnapSavePhoto( void ) {
-
-  File photoFP;
-  String photoFileDir;
-  String photoFileName;
-  camera_fb_t * photoFrameBuffer = NULL;
-  struct tm tmstruct;
-
-  tmstruct.tm_year = 0;
-  getLocalTime( &tmstruct, 5000 );
-
-  sprintf( currentDateTime, "%02d", (tmstruct.tm_mon)+1 );
-  sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_mday );
-  photoFileDir = String( "/mozz-cam/" ) + currentDateTime;
-  // TODO-FIXME - maybe only one subdir ??
-  SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
-  sprintf( currentDateTime, "/%02d\0", tmstruct.tm_hour );
-  photoFileDir += String( currentDateTime );
-  SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
-
-  // yes, I know it can be oneliner -
-  sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
-  sprintf( currentDateTime, "%s%02d", currentDateTime, (tmstruct.tm_mon)+1 );
-  sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_mday );
-  sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_hour );
-  sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_min );
-  sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_sec );
-  photoFileName = photoFileDir + String( "/PIC-" ) + currentDateTime + String( ".jpg" ) ;
-  Serial.println( photoFileName );
-
-  photoFP = SD_MMC.open( photoFileName, FILE_WRITE );
-  if( !photoFP ) {
-    Serial.println( "error opening file for picture" );
-    return;
-  }
-
-  flashON();
-  if( flashEnabled )
-    delay( 50 );
-  photoFrameBuffer = esp_camera_fb_get();
-  flashOFF();
-  if( !photoFrameBuffer ) {
-    Serial.println( "Camera capture failed" );
-    return;
-  }
-  int picFrameLength = photoFrameBuffer->len;
-  Serial.print( "Picture length : " );
-  Serial.println( picFrameLength );
-
-  photoFP.write( photoFrameBuffer->buf, picFrameLength );
-//  Serial.println( "Wrote file .." );
-
-  //return the frame buffer back to the driver for reuse
-  esp_camera_fb_return( photoFrameBuffer );
-
-  photoFP.close();
-
-  Serial.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
-  Serial.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+//  Serial.printf( "Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024) );
+//  Serial.printf( "Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
 
 }
