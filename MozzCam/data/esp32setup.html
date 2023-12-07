@@ -36,47 +36,93 @@
                 </select>
               </div>
 
-              <div class="input-group" id="quality-group">
-                <label for="quality">Quality</label>
-                <div class="range-min">4</div>
-                <input type="range" id="quality" min="4" max="63" value="10" class="default-action">
-                <div class="range-max">63</div>
-              </div>
-              <div class="input-group" id="brightness-group">
-                <label for="brightness">Brightness</label>
-                <div class="range-min">-2</div>
-                <input type="range" id="brightness" min="-2" max="2" value="0" class="default-action">
-                <div class="range-max">2</div>
-              </div>
-              <div class="input-group" id="contrast-group">
-                <label for="contrast">Contrast</label>
-                <div class="range-min">-2</div>
-                <input type="range" id="contrast" min="-2" max="2" value="0" class="default-action">
-                <div class="range-max">2</div>
-              </div>
-              <div class="input-group" id="saturation-group">
-                <label for="saturation">Saturation</label>
-                <div class="range-min">-2</div>
-                <input type="range" id="saturation" min="-2" max="2" value="0" class="default-action">
-                <div class="range-max">2</div>
-              </div>
-
-              <div class="input-group" id="hmirror-group">
-                <label for="hmirror">H-Mirror</label>
-                <div class="switch">
-                    <input id="hmirror" type="checkbox" class="default-action" checked="checked">
-                    <label class="slider" for="hmirror"></label>
-                </div>
-              </div>
-              <div class="input-group" id="vflip-group">
-                <label for="vflip">V-Flip</label>
-                <div class="switch">
-                  <input id="vflip" type="checkbox" class="default-action" checked="checked">
-                  <label class="slider" for="vflip"></label>
-                </div>
-              </div>
               <section id="buttons">
                 <button id="get-still">Get Photo</button>
+              </section>
+
+              <hr style="width:100%">
+              <label for="nav-toggle-reg" class="toggle-section-label">&#9776;&nbsp;&nbsp;Advanced Settings</label>
+              <input type="checkbox" id="nav-toggle-reg" class="hidden toggle-section-button" checked="checked">
+              <section class="toggle-section">
+
+                <div class="input-group" id="quality-group">
+                  <label for="quality">Quality</label>
+                  <div class="range-min">4</div>
+                  <input type="range" id="quality" min="4" max="63" value="10" class="default-action">
+                  <div class="range-max">63</div>
+                </div>
+                <div class="input-group" id="brightness-group">
+                  <label for="brightness">Brightness</label>
+                  <div class="range-min">-2</div>
+                  <input type="range" id="brightness" min="-2" max="2" value="0" class="default-action">
+                  <div class="range-max">2</div>
+                </div>
+                <div class="input-group" id="contrast-group">
+                  <label for="contrast">Contrast</label>
+                  <div class="range-min">-2</div>
+                  <input type="range" id="contrast" min="-2" max="2" value="0" class="default-action">
+                  <div class="range-max">2</div>
+                </div>
+                <div class="input-group" id="saturation-group">
+                  <label for="saturation">Saturation</label>
+                  <div class="range-min">-2</div>
+                  <input type="range" id="saturation" min="-2" max="2" value="0" class="default-action">
+                  <div class="range-max">2</div>
+                </div>
+  
+                <div class="input-group" id="special_effect-group">
+                  <label for="special_effect">Special Effect</label>
+                  <select id="special_effect" class="default-action">
+                      <option value="0" selected="selected">No Effect</option>
+                      <option value="1">Negative</option>
+                      <option value="2">Grayscale</option>
+                      <option value="3">Red Tint</option>
+                      <option value="4">Green Tint</option>
+                      <option value="5">Blue Tint</option>
+                      <option value="6">Sepia</option>
+                  </select>
+                </div>
+
+                <div class="input-group" id="awb-group">
+                  <label for="awb">AWB</label>
+                  <div class="switch">
+                      <input id="awb" type="checkbox" class="default-action" checked="checked">
+                      <label class="slider" for="awb"></label>
+                  </div>
+                </div>
+                <div class="input-group" id="awb_gain-group">
+                  <label for="awb_gain">AWB Gain</label>
+                  <div class="switch">
+                      <input id="awb_gain" type="checkbox" class="default-action" checked="checked">
+                      <label class="slider" for="awb_gain"></label>
+                  </div>
+                </div>
+                <div class="input-group" id="wb_mode-group">
+                  <label for="wb_mode">WB Mode</label>
+                  <select id="wb_mode" class="default-action">
+                      <option value="0" selected="selected">Auto</option>
+                      <option value="1">Sunny</option>
+                      <option value="2">Cloudy</option>
+                      <option value="3">Office</option>
+                      <option value="4">Home</option>
+                  </select>
+                </div>
+  
+                <div class="input-group" id="hmirror-group">
+                  <label for="hmirror">H-Mirror</label>
+                  <div class="switch">
+                      <input id="hmirror" type="checkbox" class="default-action" checked="checked">
+                      <label class="slider" for="hmirror"></label>
+                  </div>
+                </div>
+                <div class="input-group" id="vflip-group">
+                  <label for="vflip">V-Flip</label>
+                  <div class="switch">
+                    <input id="vflip" type="checkbox" class="default-action" checked="checked">
+                    <label class="slider" for="vflip"></label>
+                  </div>
+                </div>
+  
               </section>
 
             </nav>

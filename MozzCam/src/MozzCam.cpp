@@ -29,8 +29,8 @@ char currentDateTime[17];
 String photoFrame;
 framesize_t picFrameSize = PIC_SNAP_SIZE;
 
-bool flashEnabled = FLASHENABLED;
-bool timeLapse = TIMELAPSEMODE;
+bool flashEnabled = FLASH_ENABLED;
+bool timeLapse = TIME_LAPSE_MODE;
 
 Ticker tickerSnapPic;
 boolean tickerFired;
@@ -238,7 +238,7 @@ void setup() {
 #ifdef HAVE_CAMERA
   delay( 100 );
   initCam();
-  flashOFF();
+  // flashOFF();
   // turn off AI_THINKER LED; 
   digitalWrite( AI_THINKER_LED, LOW );
   Serial.println( "AI-Thinker LED OFF!" );

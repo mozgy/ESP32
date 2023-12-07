@@ -14,6 +14,7 @@ extern unsigned long wifiWaitTime;
 extern int wifiConnTries;
 
 extern void flashLED( uint32_t );
+extern void flashLED( uint32_t, bool );
 
 void waitForConnect ( unsigned long timeout );
 String get_wifi_status( int status );

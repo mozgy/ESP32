@@ -12,7 +12,7 @@
 #include <WiFiUdp.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
-#include <Base64.h>
+#include <base64.h>
 
 #include "variables.h"
 #include "mywebserver.h"
@@ -226,6 +226,14 @@ void asyncHandleCommand( AsyncWebServerRequest *request ) {
     err = sensor->set_contrast( sensor, valueNum );
   } else if( variable == "saturation" ) {
     err = sensor->set_saturation( sensor, valueNum );
+  } else if( variable == "sharpness" ) {
+    err = sensor->set_sharpness( sensor, valueNum );
+  } else if( variable == "special_effect" ) {
+    err = sensor->set_special_effect( sensor, valueNum );
+  } else if( variable == "wb_mode" ) {
+    err = sensor->set_wb_mode( sensor, valueNum );
+  } else if( variable == "awb" ) {
+    err = sensor->set_whitebal( sensor, valueNum );
   } else if( variable == "vflip" ) {
     err = sensor->set_vflip( sensor, valueNum );
   } else if( variable == "hmirror" ) {

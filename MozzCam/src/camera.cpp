@@ -147,8 +147,26 @@ String getCameraStatus( void ) {
   jsonResponse += ",\"saturation\":" + String( sensor->status.saturation );
   jsonResponse += ",\"sharpness\":" + String( sensor->status.sharpness );
   jsonResponse += ",\"special_effect\":" + String( sensor->status.special_effect );
+  jsonResponse += ",\"wb_mode\":" + String( sensor->status.wb_mode );
+  jsonResponse += ",\"awb\":" + String( sensor->status.awb );
+  jsonResponse += ",\"awb_gain\":" + String( sensor->status.awb_gain );
+  jsonResponse += ",\"aec\":" + String( sensor->status.aec );
+  jsonResponse += ",\"aec2\":" + String( sensor->status.aec2 );
+  jsonResponse += ",\"ae_level\":" + String( sensor->status.ae_level );
+  jsonResponse += ",\"aec_value\":" + String( sensor->status.aec_value );
+  jsonResponse += ",\"agc\":" + String( sensor->status.agc );
+  jsonResponse += ",\"agc_gain\":" + String( sensor->status.agc_gain );
+  jsonResponse += ",\"gainceiling\":" + String( sensor->status.gainceiling );
+  jsonResponse += ",\"bpc\":" + String( sensor->status.bpc );
+  jsonResponse += ",\"wpc\":" + String( sensor->status.wpc );
+  jsonResponse += ",\"raw_gma\":" + String( sensor->status.raw_gma );
+  jsonResponse += ",\"lenc\":" + String( sensor->status.lenc );
+  jsonResponse += ",\"dcw\":" + String( sensor->status.dcw );
+  jsonResponse += ",\"colorbar\":" + String( sensor->status.colorbar );
   jsonResponse += ",\"vflip\":" + String( sensor->status.vflip );
   jsonResponse += ",\"hmirror\":" + String( sensor->status.hmirror );
+//  jsonResponse += ",\"pixformat\":" + String( sensor->pixformat );
+//  jsonResponse += ",\"xclk\":" + String( sensor->xclk_freq_hz / 1000000 );
   jsonResponse += "}";
 
   Serial.println( jsonResponse );
@@ -156,34 +174,6 @@ String getCameraStatus( void ) {
 
 }
 
-/*
-  github shameless
-
-  sensor_t * sensor = esp_camera_sensor_get();
-  sensor->set_brightness(sensor, CameraCfg.brightness);       // -2 to 2
-  sensor->set_contrast(sensor, CameraCfg.contrast);           // -2 to 2
-  sensor->set_saturation(sensor, CameraCfg.saturation);       // -2 to 2
-  sensor->set_special_effect(sensor, 0);                      // 0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia
-  sensor->set_whitebal(sensor, 1);                            // 0 = disable , 1 = enable
-  sensor->set_awb_gain(sensor, 1);                            // 0 = disable , 1 = enable
-  sensor->set_wb_mode(sensor, 0);                             // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
-  sensor->set_exposure_ctrl(sensor, CameraCfg.exposure_ctrl); // 0 = disable , 1 = enable
-  sensor->set_aec2(sensor, 0);                                // 0 = disable , 1 = enable
-  sensor->set_ae_level(sensor, 0);                            // -2 to 2
-  sensor->set_aec_value(sensor, 300);                         // 0 to 1200
-  sensor->set_gain_ctrl(sensor, 1);                           // 0 = disable , 1 = enable
-  sensor->set_agc_gain(sensor, 0);                            // 0 to 30
-  sensor->set_gainceiling(sensor, (gainceiling_t)0);          // 0 to 6
-  sensor->set_bpc(sensor, 0);                                 // 0 = disable , 1 = enable
-  sensor->set_wpc(sensor, 1);                                 // 0 = disable , 1 = enable
-  sensor->set_raw_gma(sensor, 1);                             // 0 = disable , 1 = enable
-  sensor->set_lenc(sensor, CameraCfg.lensc);                  // 0 = disable , 1 = enable
-  sensor->set_hmirror(sensor, CameraCfg.hmirror);             // 0 = disable , 1 = enable
-  sensor->set_vflip(sensor, CameraCfg.vflip);                 // 0 = disable , 1 = enable
-  sensor->set_dcw(sensor, 1);                                 // 0 = disable , 1 = enable
-  sensor->set_colorbar(sensor, 0);                            // 0 = disable , 1 = enable
-
-  */
 /*
     // Sensor function pointers
     int  (*init_status)         (sensor_t *sensor);
@@ -243,6 +233,16 @@ void flashON( void ) {
 
 }
 
+void flashON( bool forcedFlash ) {
+
+  if( !forcedFlash )
+    return;
+
+  pinMode( FLASH_LED, OUTPUT );
+  digitalWrite( FLASH_LED, HIGH );
+
+}
+
 void flashOFF( void ) {
 
 // global settings - ignoring html on/off
@@ -265,6 +265,16 @@ void flashOFF( void ) {
 
 }
 
+void flashOFF( bool forcedFlash ) {
+
+  if( !forcedFlash )
+    return;
+
+  pinMode( FLASH_LED, OUTPUT );
+  digitalWrite( FLASH_LED, LOW );
+
+}
+
 void flashLED( uint32_t flashONTime ) {
 
 // html switch on/off
@@ -274,6 +284,17 @@ void flashLED( uint32_t flashONTime ) {
   flashON();
   delay( flashONTime );
   flashOFF();
+
+}
+
+void flashLED( uint32_t flashONTime, bool forcedFlash ) {
+
+  if( !forcedFlash )
+    return;
+
+  flashON( true );
+  delay( flashONTime );
+  flashOFF( true );
 
 }
 

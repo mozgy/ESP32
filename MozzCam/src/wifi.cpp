@@ -75,7 +75,7 @@ void initWiFi( void ) {
   wifiSTATries = 1;
   bool wifiNoSTA = false;
 
-  flashLED( 300 ); delay( 80 ); flashLED( 300 );
+  flashLED( 300, true ); delay( 80 ); flashLED( 300, true );
   WiFi.softAPdisconnect( true );
   WiFi.disconnect( true );
   WiFi.setMinSecurity( WIFI_AUTH_WPA_PSK );
@@ -94,7 +94,7 @@ void initWiFi( void ) {
   WiFi.setSleep( false );
 
   WiFi.scanNetworks( true );
-  flashLED( 50 ); delay( 80 ); flashLED( 50 ); delay( 80 ); flashLED( 50 );
+  flashLED( 50, true ); delay( 80 ); flashLED( 50, true ); delay( 80 ); flashLED( 50, true );
 
 }
 
