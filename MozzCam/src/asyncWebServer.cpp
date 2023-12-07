@@ -21,53 +21,6 @@
 
 AsyncWebServer asyncWebServer(8080);
 
-void listDirectory( File path, AsyncWebServerRequest *request ) {
-
-  String linkName;
-  String webText;
-  int numPhoto = 0;
-  unsigned long atStart = millis();
-
-  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "");
-  response->addHeader("Content-Length", "CONTENT_LENGTH_UNKNOWN");
-  webText = "<!DOCTYPE html><html><head><title>Mozz Cam</title>";
-  webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
-  webText += "<body><div class='limiter'><div class='container-tableCam'><div class='wrap-tableCam'>";
-  webText += "<div class='tableCam'><div class='tableCam-body'><table><tbody>";
-//  request->sendChunked( webText );
-
-  if( path.isDirectory() ) {
-    File file = path.openNextFile();
-    while( file ) {
-      linkName = String( file.name() );
-      webText += "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
-      webText += "<td class='co2'>";
-      if( linkName.endsWith( ".jpg" ) ) {
-        webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
-      } else {
-        webText += "DIR"; // ToDo - add weblink to delete whole dir
-      }
-      webText += "</td></tr>";
-      file.close();
-//      request->sendChunked( webText );
-      file = path.openNextFile();
-//      Serial.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
-      numPhoto++;
-    }
-  }
-
-  webText += "</tbody></table></div>"; // remove + if request->send is uncommented
-//  webText += getHTMLTFootText( numPhoto );
-  webText += "</div></div></div></div></body></html>";
-  request->send( 200, "text/html", webText );
-
-  unsigned long atEnd = millis();
-  Serial.printf( "Time in listDirectory: %lu milisec\n", atEnd - atStart );
-  Serial.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
-
-}
-
 bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
   String dataType;
@@ -450,7 +403,7 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
   webText += request->url();
   webText += "\nMethod: ";
   webText += ( request->method() == HTTP_GET ) ? "GET" : "POST";
-  webText += "\nParameters: ";
+  webText += ", Parameters: ";
   webText += request->params();
   webText += "\n";
   for( uint8_t i = 0 ; i < request->params(); i++ ) {
@@ -458,8 +411,8 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     webText += String( p->name().c_str() ) + " : " + String( p->value().c_str() ) + "\r\n";
   }
 
-  Serial.print( "Basename - " );
-  Serial.println( fileName );
+  // Serial.print( "Basename - " );
+  // Serial.println( fileName );
   Serial.println( webText );
 
   bool fileLocalFS = false;
@@ -479,6 +432,10 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
   if( fileLocalFS ) {
     request->send( LittleFS.open( fileName.c_str() ), fileName.c_str(), dataType );
     return;
+  } else {
+    if( loadFromSDCard( request ) ) {
+      return;
+    }
   }
 
   webText = "\nNo Handler\r\n" + webText;

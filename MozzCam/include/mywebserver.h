@@ -13,6 +13,7 @@ void asyncHandleSetup( AsyncWebServerRequest *request );
 void asyncHandleFullSetup( AsyncWebServerRequest *request );
 void asyncHandleLogin( AsyncWebServerRequest *request );
 void asyncHandleNotFound( AsyncWebServerRequest *request );
+void listDirectory( File path, AsyncWebServerRequest *request );
 void initAsyncWebServer( void );
 void doSnapSavePhoto( void );
 

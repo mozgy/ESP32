@@ -310,12 +310,16 @@ void doSnapSavePhoto( void ) {
   photoFrame = "";
 
   if( timeLapse ) {
+    String photoFileDir;
+    String photoFileName;
+
     getLocalTime( &tmstruct, 5000 );
 
-    sprintf( currentDateTime, "%02d", (tmstruct.tm_mon)+1 );
-    sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_mday );
-    photoFileDir = String( "/mozz-cam/" ) + currentDateTime;
-    // TODO-FIXME - maybe only one subdir ??
+    sprintf( currentDateTime, "%04d\0", (tmstruct.tm_year)+1900 );
+    photoFileDir = String( "/mozz-cam/" ) + currentDateTime;  // /mozz-cam/YYYY
+    SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
+    sprintf( currentDateTime, "/%02d%02d\0", (tmstruct.tm_mon)+1, tmstruct.tm_mday );
+    photoFileDir += String( currentDateTime );  // /mozz-cam/YYYY/MMDD
     SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
     sprintf( currentDateTime, "/%02d\0", tmstruct.tm_hour );
     photoFileDir += String( currentDateTime );
@@ -328,12 +332,12 @@ void doSnapSavePhoto( void ) {
     sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_hour );
     sprintf( currentDateTime, "%s%02d", currentDateTime, tmstruct.tm_min );
     sprintf( currentDateTime, "%s%02d\0", currentDateTime, tmstruct.tm_sec );
-    photoFileName = photoFileDir + String( "/PIC-" ) + currentDateTime + String( ".jpg" ) ;
+    photoFileName = photoFileDir + String( "/photo-" ) + currentDateTime + String( ".jpg" ) ;
     Serial.println( photoFileName );
 
     photoFP = SD_MMC.open( photoFileName, FILE_WRITE );
     if( !photoFP ) {
-      Serial.println( "error opening file for picture" );
+      Serial.println( "SD Card file open error" );
       return;
     }
   }
@@ -366,7 +370,7 @@ void doSnapSavePhoto( void ) {
   //  process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
   if( timeLapse ) {
     photoFP.write( photoFrameBuffer->buf, photoFrameLength );
-    //  Serial.println( "Wrote file .." );
+    Serial.println( "Wrote file .." );
   }
 
   //return the frame buffer back to the driver for reuse

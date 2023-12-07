@@ -72,11 +72,12 @@ void prnEspStats( void ) {
 void fnElapsedStr( char *str ) {
 
   unsigned long sec;
-  int minute, hour;
+  int minute, hour, day;
 
   sec = millis() / 1000;
   minute = ( sec % 3600 ) / 60;
   hour = sec / 3600;
+  day = hour / 24;
   sprintf( str, "Elapsed " );
   if ( hour == 0 ) {
     sprintf( str, "%s   ", str );
