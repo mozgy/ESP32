@@ -360,8 +360,8 @@ void doSnapSavePhoto( void ) {
   // if (fb->format == PIXFORMAT_JPEG) // ToDo Check, JPEG mandatory
 
   size_t photoFrameLength = photoFrameBuffer->len;
-  Serial.print( "Picture length : " );
-  Serial.println( photoFrameLength );
+  // Serial.print( "Picture length : " );
+  // Serial.println( photoFrameLength );
   for( size_t i = 0; i < photoFrameLength; i++ ) {
     photoFrame += (char) photoFrameBuffer->buf[ i ];
   }

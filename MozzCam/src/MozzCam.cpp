@@ -276,13 +276,15 @@ void loop() {
 #endif
     wifiStatus = WiFi.status();
     Serial.println( get_wifi_status( wifiStatus ) );
-    Serial.print( "Signal Strength (RSSI): " );
+    Serial.print( "(RSSI): " );
     Serial.print( WiFi.RSSI() );
-    Serial.println( " dBm" );
-    Serial.println( WiFi.macAddress() );
+    Serial.print( " dBm, MAC=" );
+    Serial.print( WiFi.macAddress() );
     if( WiFi.status() == WL_CONNECTED ) {
-      Serial.println( WiFi.localIP() );
+      Serial.print( ", IP=" );
+      Serial.print( WiFi.localIP() );
     }
+    Serial.println();
     fnElapsedStr( elapsedTimeString );
     Serial.println( elapsedTimeString );
     if( oldTickerValue != waitTime ) {
