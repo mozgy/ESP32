@@ -337,6 +337,16 @@ void asyncHandleScan( AsyncWebServerRequest *request ) {
   json = String();
 
 }
+void asyncHandleESPReset( AsyncWebServerRequest *request ) {
+
+  if( !request->authenticate( http_username, http_password ) ) {
+    request->send( 200, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='20; URL=/'></head><body>Not Authorized!</body></html>" );
+    return;
+  }
+
+  ESP.restart();
+
+}
 
 void asyncHandleArchive( AsyncWebServerRequest *request ) {
 
@@ -346,6 +356,17 @@ void asyncHandleArchive( AsyncWebServerRequest *request ) {
   // listDirectoryAsString( photoDir );
   listDirectory( photoDir, request );
   photoDir.close();
+
+}
+
+void asyncHandleSDCardRemount( AsyncWebServerRequest *request ) {
+
+  if( !request->authenticate( http_username, http_password ) ) {
+    request->send( 200, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='20; URL=/'></head><body>Not Authorized!</body></html>" );
+    return;
+  }
+
+  initSDCard();
 
 }
 
@@ -448,7 +469,6 @@ void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
   asyncWebServer.on( "/login", HTTP_GET, asyncHandleLogin );
-  asyncWebServer.on( "/scan", HTTP_GET, asyncHandleScan );
   asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/setup", HTTP_GET, asyncHandleSetup );
   asyncWebServer.on( "/photo", HTTP_GET, asyncHandlePicture );
@@ -466,6 +486,10 @@ void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/delete", HTTP_GET, asyncHandleDelete );
   asyncWebServer.on( "/archive", HTTP_GET, asyncHandleArchive );
+  asyncWebServer.on( "/sdcard", HTTP_GET, asyncHandleSDCardRemount );
+
+  asyncWebServer.on( "/scan", HTTP_GET, asyncHandleScan );
+  asyncWebServer.on( "/espReset", HTTP_GET, asyncHandleESPReset );
 
   asyncWebServer.onNotFound( asyncHandleNotFound );
 

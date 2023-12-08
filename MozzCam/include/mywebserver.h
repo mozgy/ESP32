@@ -24,6 +24,7 @@ String getHTMLFullSetupText( void );
 String getCameraStatus( void );
 
 void fnElapsedStr( char *str );
+void initSDCard( void );
 
 extern void reconfigureCamera( void );
 extern void fnSetFrameSize( String frameSize );
