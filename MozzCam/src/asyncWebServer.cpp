@@ -21,37 +21,6 @@
 
 AsyncWebServer asyncWebServer(8080);
 
-bool loadFromSDCard( AsyncWebServerRequest *request ) {
-
-  String dataType;
-  String webText;
-  String path = request->url();
-
-  File dataFile = SD_MMC.open( path.c_str() );
-
-  if( !dataFile ) {
-    return false;
-  }
-
-  if( dataFile.isDirectory() ) {
-    // webText = listDirectoryAsJSON( dataFile );
-    // request->send( 200, "application/json", webText );
-    listDirectory( dataFile, request );
-    dataFile.close();
-    return true;
-  }
-  if( path.endsWith( ".jpg" ) ) {
-    dataType = "image/jpeg";
-    // request->send( SD_MMC, path.c_str(), String(), true ); // new window - download
-    request->send( SD_MMC, path.c_str(), dataType );
-    dataFile.close();
-    return true;
-  }
-
-  return false;
-
-}
-
 void asyncHandleRoot( AsyncWebServerRequest *request ) {
 
   // Serial.println( " asyncHandleRoot " );

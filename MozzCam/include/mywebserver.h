@@ -14,6 +14,7 @@ void asyncHandleFullSetup( AsyncWebServerRequest *request );
 void asyncHandleLogin( AsyncWebServerRequest *request );
 void asyncHandleNotFound( AsyncWebServerRequest *request );
 void listDirectory( File path, AsyncWebServerRequest *request );
+bool loadFromSDCard( AsyncWebServerRequest *request );
 void initAsyncWebServer( void );
 void doSnapSavePhoto( void );
 

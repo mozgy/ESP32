@@ -108,6 +108,39 @@ String getHTMLTFootText( int numPic ) {
 
 }
 
+bool loadFromSDCard( AsyncWebServerRequest *request ) {
+
+  String dataType;
+  String webText;
+  String path = request->url();
+  Serial.print( "SDCard load filename - " );
+  Serial.println( path.c_str() );
+
+  File dataFile = SD_MMC.open( path.c_str() );
+
+  if( !dataFile ) {
+    return false;
+  }
+
+  if( dataFile.isDirectory() ) {
+    // webText = listDirectoryAsJSON( dataFile );
+    // request->send( 200, "application/json", webText );
+    listDirectory( dataFile, request );
+    dataFile.close();
+    return true;
+  }
+  if( path.endsWith( ".jpg" ) ) {
+    dataType = "image/jpeg";
+    // request->send( SD_MMC, path.c_str(), String(), true ); // new window - download
+    request->send( SD_MMC, path.c_str(), dataType );
+    dataFile.close();
+    return true;
+  }
+
+  return false;
+
+}
+
 String listDirectoryAsString( File path ) {
 
   String linkName;
@@ -183,6 +216,8 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
   int numPhoto = 0;
   unsigned long atStart = millis();
 
+  // Serial.println( "listDirectory -" );
+
   AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "");
   response->addHeader("Content-Length", "CONTENT_LENGTH_UNKNOWN");
   webText = "<!doctype html><html><head><title>Mozz Cam</title>";
@@ -197,6 +232,8 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
     while( file ) {
       linkName = String( file.name() );
       webText += "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      Serial.print( " - href - " );
+      Serial.println( linkName );
       webText += "<td class='co2'>";
       if( linkName.endsWith( ".jpg" ) ) {
         webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
