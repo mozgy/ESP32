@@ -387,7 +387,7 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
   String webText;
 
   int lastSlash = path.lastIndexOf( '/' );
-  String fileName = path.substring( lastSlash, path.length() );
+  String fileName = path.substring( lastSlash + 1, path.length() );
 
   webText = "URI: ";
   webText += request->url();
@@ -401,8 +401,8 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     webText += String( p->name().c_str() ) + " : " + String( p->value().c_str() ) + "\r\n";
   }
 
-  // Serial.print( "Basename - " );
-  // Serial.println( fileName );
+  Serial.print( "Basename - " );
+  Serial.println( fileName );
   Serial.println( webText );
 
   bool fileLocalFS = false;

@@ -9,23 +9,6 @@
 #include "variables.h"
 #include "mywebserver.h"
 
-/*
-// In Progress ..
-String fnOptionVGA( char *str1, char *str2 ) {
-
-  String webText;
-
-  webText = "  <option value='";
-  webText += String( str1 ) + "'";
-  if( String( foo[picSnapSize] ) == String ( str1 ) ) {
-    webText += "selected";
-  }
-  webText += ">" + String( str2 ) + "</option>";
-
-  return webText;
-
-}
-*/
 
 String getHTMLRootText( void ) {
 
@@ -211,12 +194,14 @@ String listDirectoryAsJSON( File path ) {
 
 void listDirectory( File path, AsyncWebServerRequest *request ) {
 
+  int numPhoto = 0;
   String linkName;
   String webText;
-  int numPhoto = 0;
+  String fullPath = path.name();
+  // ToDo - strip starting dir name ie '/mozz-cam'
   unsigned long atStart = millis();
 
-  // Serial.println( "listDirectory -" );
+  Serial.printf( "listDirectory - %s\n", fullPath );
 
   AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "");
   response->addHeader("Content-Length", "CONTENT_LENGTH_UNKNOWN");
@@ -230,8 +215,8 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
   if( path.isDirectory() ) {
     File file = path.openNextFile();
     while( file ) {
-      linkName = String( file.name() );
-      webText += "<tr><td class='co1'><a href='" + linkName + "'>" + linkName + "</a></td>";
+      // linkName =  fullPath + "/" + String( file.name() );
+      webText += "<tr><td class='co1'><a href='/" + linkName + "'>" + linkName + "</a></td>";
       Serial.print( " - href - " );
       Serial.println( linkName );
       webText += "<td class='co2'>";
@@ -256,7 +241,7 @@ void listDirectory( File path, AsyncWebServerRequest *request ) {
 
   unsigned long atEnd = millis();
   Serial.printf( "Time in listDirectory: %lu milisec\n", atEnd - atStart );
-  Serial.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
+//  Serial.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
 
 }
 

@@ -13,7 +13,7 @@ body {
 
 .container-tableCam {
   width: 100%;
-  background: #fff;
+/*  background: #fff; */
   min-height: 80vh;
   display: -webkit-box;
   display: -webkit-flex;
@@ -40,7 +40,7 @@ th, td {
 }
 
 .tableCam {
-  background-color: #fff;
+/*  background-color: #fff; */
   padding-top: 2px;
   position: relative;
   overflow: hidden;
