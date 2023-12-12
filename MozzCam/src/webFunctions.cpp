@@ -107,6 +107,8 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   Serial.print( fileName );
   Serial.print( ", " );
   Serial.println( baseName );
+  // SDCard load filename - google.com:443
+  // SDCard load filename - www.sneakersnstuff.com:443
   */
   Serial.printf( "SDCard load - %s, %s, %s\n", path.c_str(), fileName.c_str(), baseName.c_str() );
 
