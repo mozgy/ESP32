@@ -96,10 +96,21 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   String dataType;
   String webText;
   String path = request->url();
-  Serial.print( "SDCard load filename - " );
-  Serial.println( path.c_str() );
+  int lastSlash = path.lastIndexOf( '/' );
+  String baseName = path.substring( lastSlash + 1, path.length() );
+  String fileName = path.c_str();
 
-  File dataFile = SD_MMC.open( path.c_str() );
+/*  Do'h - String has some interesting typecasts
+  Serial.print( "SDCard load - " );
+  Serial.print( path );
+  Serial.print( ", " );
+  Serial.print( fileName );
+  Serial.print( ", " );
+  Serial.println( baseName );
+  */
+  Serial.printf( "SDCard load - %s, %s, %s\n", path.c_str(), fileName.c_str(), baseName.c_str() );
+
+  File dataFile = SD_MMC.open( fileName );
 
   if( !dataFile ) {
     return false;
@@ -108,14 +119,14 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   if( dataFile.isDirectory() ) {
     // webText = listDirectoryAsJSON( dataFile );
     // request->send( 200, "application/json", webText );
-    listDirectory( dataFile, request );
+    listDirectory( fileName, request );
     dataFile.close();
     return true;
   }
   if( path.endsWith( ".jpg" ) ) {
     dataType = "image/jpeg";
     // request->send( SD_MMC, path.c_str(), String(), true ); // new window - download
-    request->send( SD_MMC, path.c_str(), dataType );
+    request->send( SD_MMC, fileName, dataType );
     dataFile.close();
     return true;
   }
@@ -124,6 +135,73 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
 
 }
 
+void listDirectory( String path, AsyncWebServerRequest *request ) {
+
+  int numPhoto = 0;
+  String linkName;
+  String hrefName;
+  String fileName;
+  String webText;
+  unsigned long atStart = millis();
+
+  if( HIDE_ROOT_DIR ) {
+    String tmpPath = path;
+    path = "/mozz-cam" + tmpPath;
+  }
+  Serial.printf( "listDirectory - %s\n", path.c_str() );
+
+  File linkNameFP = SD_MMC.open( path.c_str() );
+  if( !linkNameFP ) {
+    request->send( 200, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='20; URL=/'></head><body>Cam Dir *NOT* Initialized!</body></html>" );
+  }
+
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "");
+  response->addHeader("Content-Length", "CONTENT_LENGTH_UNKNOWN");
+  webText = "<!doctype html><html><head><title>Mozz Cam</title>";
+  webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
+  webText += "<body><div class='limiter'><div class='container-tableCam'><div class='wrap-tableCam'>";
+  webText += "<div class='tableCam'><div class='tableCam-body'><table><tbody>";
+//  request->sendChunked( webText );
+
+  if( linkNameFP.isDirectory() ) {
+    File file = linkNameFP.openNextFile();
+    while( file ) {
+      // ToDo - hide SDCard cam subdir ie '/mozz-cam'
+      fileName = String( file.name() );
+      hrefName = path + "/" + fileName;
+      webText += "<tr><td class='co1'><a href='" + hrefName + "'>" + fileName + "</a></td>";
+      Serial.print( " - href - " );
+      Serial.println( hrefName );
+      webText += "<td class='co2'>";
+      if( fileName.endsWith( ".jpg" ) ) {
+        webText += "<a href='/delete?filename=" + hrefName + "'>X</a>";
+      } else {
+        webText += "DIR"; // ToDo - add weblink to delete whole dir
+      }
+      webText += "</td></tr>";
+      file.close();
+//      request->sendChunked( webText );
+      file = linkNameFP.openNextFile();
+//      Serial.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
+      numPhoto++;
+    }
+  }
+
+  webText += "</tbody></table></div>"; // remove + if request->send is uncommented
+//  webText += getHTMLTFootText( numPhoto );
+  webText += "</div></div></div></div></body></html>";
+  request->send( 200, "text/html", webText );
+
+  linkNameFP.close();
+
+  unsigned long atEnd = millis();
+  Serial.printf( "Time in listDirectory: %lu milisec\n", atEnd - atStart );
+//  Serial.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
+
+}
+
+/*
 String listDirectoryAsString( File path ) {
 
   String linkName;
@@ -159,6 +237,7 @@ String listDirectoryAsString( File path ) {
   return webText;
 
 }
+  */
 
 String listDirectoryAsJSON( File path ) {
 
@@ -191,60 +270,6 @@ String listDirectoryAsJSON( File path ) {
 //  table = fnJSONList( path );
 
 }
-
-void listDirectory( File path, AsyncWebServerRequest *request ) {
-
-  int numPhoto = 0;
-  String linkName;
-  String webText;
-  String fullPath = path.name();
-  // ToDo - strip starting dir name ie '/mozz-cam'
-  unsigned long atStart = millis();
-
-  Serial.printf( "listDirectory - %s\n", fullPath );
-
-  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "");
-  response->addHeader("Content-Length", "CONTENT_LENGTH_UNKNOWN");
-  webText = "<!doctype html><html><head><title>Mozz Cam</title>";
-  webText += "<meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  webText += "<link rel='stylesheet' type='text/css' href='mozz.css'></head>";
-  webText += "<body><div class='limiter'><div class='container-tableCam'><div class='wrap-tableCam'>";
-  webText += "<div class='tableCam'><div class='tableCam-body'><table><tbody>";
-//  request->sendChunked( webText );
-
-  if( path.isDirectory() ) {
-    File file = path.openNextFile();
-    while( file ) {
-      // linkName =  fullPath + "/" + String( file.name() );
-      webText += "<tr><td class='co1'><a href='/" + linkName + "'>" + linkName + "</a></td>";
-      Serial.print( " - href - " );
-      Serial.println( linkName );
-      webText += "<td class='co2'>";
-      if( linkName.endsWith( ".jpg" ) ) {
-        webText += "<a href='/delete?FILENAME=" + linkName + "'>X</a>";
-      } else {
-        webText += "DIR"; // ToDo - add weblink to delete whole dir
-      }
-      webText += "</td></tr>";
-      file.close();
-//      request->sendChunked( webText );
-      file = path.openNextFile();
-//      Serial.printf( "Heap after openNextFile: %u\n", ESP.getFreeHeap() );
-      numPhoto++;
-    }
-  }
-
-  webText += "</tbody></table></div>"; // remove + if request->send is uncommented
-//  webText += getHTMLTFootText( numPhoto );
-  webText += "</div></div></div></div></body></html>";
-  request->send( 200, "text/html", webText );
-
-  unsigned long atEnd = millis();
-  Serial.printf( "Time in listDirectory: %lu milisec\n", atEnd - atStart );
-//  Serial.printf( "Heap after listDirectory: %u\n", ESP.getFreeHeap() );
-
-}
-
 
 /*
 <!doctype html>

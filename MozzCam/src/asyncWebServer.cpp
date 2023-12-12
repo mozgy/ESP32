@@ -319,12 +319,7 @@ void asyncHandleESPReset( AsyncWebServerRequest *request ) {
 
 void asyncHandleArchive( AsyncWebServerRequest *request ) {
 
-  File photoDir;
-
-  photoDir = SD_MMC.open( "/mozz-cam" );
-  // listDirectoryAsString( photoDir );
-  listDirectory( photoDir, request );
-  photoDir.close();
+  listDirectory( "/mozz-cam", request );
 
 }
 
@@ -348,8 +343,9 @@ void asyncHandleDelete( AsyncWebServerRequest *request ) {
 
   String webText;
 
-  AsyncWebParameter* argDelete = request->getParam( "FILENAME" );
+  AsyncWebParameter* argDelete = request->getParam( "filename" );
   String fileName = argDelete->value();
+  Serial.println( fileName ); return;
 //  deleteFile( SD_MMC, fileName );
   if( SD_MMC.remove( fileName.c_str() ) ) {
     webText = "Deleted - " + String( fileName );
@@ -387,7 +383,7 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
   String webText;
 
   int lastSlash = path.lastIndexOf( '/' );
-  String fileName = path.substring( lastSlash + 1, path.length() );
+  String fileName = path.substring( lastSlash, path.length() );
 
   webText = "URI: ";
   webText += request->url();
@@ -420,7 +416,9 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     fileLocalFS = true;
   }
   if( fileLocalFS ) {
-    request->send( LittleFS.open( fileName.c_str() ), fileName.c_str(), dataType );
+    File fp = LittleFS.open( fileName.c_str() );
+    request->send( fp, fileName.c_str(), dataType );
+    fp.close();
     return;
   } else {
     if( loadFromSDCard( request ) ) {
