@@ -28,7 +28,7 @@ const picSizeStrings_t foo[] = {
   "Framesize QXGA - 2048x1536"
 };
 
-#define PIC_SNAP_SIZE FRAMESIZE_QVGA
+#define PIC_SNAP_SIZE FRAMESIZE_VGA
 extern framesize_t picFrameSize;
 
 // Select camera model

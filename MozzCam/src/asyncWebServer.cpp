@@ -37,7 +37,7 @@ void asyncHandleStatistics( AsyncWebServerRequest *request ) {
 
 void asyncHandleStatus( AsyncWebServerRequest *request ) {
 
-  Serial.println( " asyncHandleStatus " );
+  // Serial.println( " asyncHandleStatus " );
   AsyncWebServerResponse *response = request->beginResponse( 200, "application/json", getCameraStatus() );
   response->addHeader( "Access-Control-Allow-Origin", "*" );
   request->send( response );
@@ -67,7 +67,7 @@ void asyncHandleFullSetup( AsyncWebServerRequest *request ) {
 
   String fileName = "/esp32setup.html";
 
-//  request->send( LittleFS.open( fileName.c_str() ), fileName.c_str(), "text/html" );
+  // request->send( LittleFS.open( fileName.c_str() ), fileName.c_str(), "text/html" );
 
   File filePointer = LittleFS.open( fileName.c_str(), "r" );
   if( filePointer ) {
@@ -131,6 +131,8 @@ void asyncHandleCommand( AsyncWebServerRequest *request ) {
     request->send( 500, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='10; URL=/'></head><body>Wrong Input Parameter!</body></html>" );
     return;
   }
+
+  Serial.printf( " asyncHandleCommand - %s - %s\n", variable, value );
 
   sensor_t *sensor = esp_camera_sensor_get();
   int err = 0;
@@ -198,6 +200,7 @@ void asyncHandleXClk( AsyncWebServerRequest *request ) {
 
 }
 
+// OLD format code - ToDo migrate to js
 void asyncHandleInput( AsyncWebServerRequest *request ) {
 
   if( !request->authenticate( http_username, http_password ) ) {
@@ -232,11 +235,12 @@ void asyncHandleInput( AsyncWebServerRequest *request ) {
 //  }
   Serial.println( " !" );
 
-  webText = "<!doctype html><html><head><meta http-equiv='refresh' content='5; URL=/'></head><body>Set!</body></html>";
+  webText = "<!doctype html><html><head><meta http-equiv='refresh' content='2; URL=/'></head><body>Set!</body></html>";
   request->send( 200, "text/html", webText );
 
 }
 
+// OLD format code - ToDo migrate to js
 void asyncHandlePicture( AsyncWebServerRequest *request ) {
 
   if( !request->authenticate( http_username, http_password ) ) {
@@ -251,7 +255,7 @@ void asyncHandlePicture( AsyncWebServerRequest *request ) {
   // request->send( 200, "image/jpg", photoFrame ); // dangerous as photoFrame is full binary and not BASE64
   // request->send_P( 200, "image/jpg", (uint8_t*) photoFrame.c_str(), photoFrame.length() );
 
-  webText = "<!DOCTYPE html><html><head><title>Mozz Cam</title></head>";
+  webText = "<!doctype html><html><head><title>Mozz Cam</title></head>";
   webText += "<body>Neka slika .. valjda .. -<p><img src=\"data:image/jpg;base64,";
   String encodedPhoto = base64::encode( photoFrame );
   webText += encodedPhoto;
@@ -323,6 +327,7 @@ void asyncHandleArchive( AsyncWebServerRequest *request ) {
 
 }
 
+// FIXME - NOT WORKY !!
 void asyncHandleSDCardRemount( AsyncWebServerRequest *request ) {
 
   if( !request->authenticate( http_username, http_password ) ) {
@@ -345,7 +350,13 @@ void asyncHandleDelete( AsyncWebServerRequest *request ) {
 
   AsyncWebParameter* argDelete = request->getParam( "filename" );
   String fileName = argDelete->value();
-  Serial.println( fileName ); return;
+
+  Serial.printf( " asyncHandleDelete - %s\n", fileName );
+  webText = "ToDelete - ";
+  webText += fileName;
+  request->send( 200, "text/plain", webText );
+  return;
+
 //  deleteFile( SD_MMC, fileName );
   if( SD_MMC.remove( fileName.c_str() ) ) {
     webText = "Deleted - " + String( fileName );
@@ -416,9 +427,10 @@ void asyncHandleNotFound( AsyncWebServerRequest *request ) {
     fileLocalFS = true;
   }
   if( fileLocalFS ) {
-    File fp = LittleFS.open( fileName.c_str() );
-    request->send( fp, fileName.c_str(), dataType );
-    fp.close();
+    request->send( LittleFS.open( fileName.c_str() ), fileName.c_str(), dataType );
+    // File fp = LittleFS.open( fileName.c_str() ); // FIXME - NO WORKY
+    // request->send( fp, fileName.c_str(), dataType );
+    // fp.close();
     return;
   } else {
     if( loadFromSDCard( request ) ) {
