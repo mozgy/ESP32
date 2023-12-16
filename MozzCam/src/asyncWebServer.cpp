@@ -162,6 +162,10 @@ void asyncHandleCommand( AsyncWebServerRequest *request ) {
     err = sensor->set_vflip( sensor, valueNum );
   } else if( variable == "hmirror" ) {
     err = sensor->set_hmirror( sensor, valueNum );
+  } else if( variable == "timelapse" ) {
+    timeLapse = !timeLapse;
+  } else if( variable == "flashled" ) {
+    flashEnabled = !flashEnabled;
   } else {
     err = -1;
   }
@@ -448,27 +452,27 @@ void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/", HTTP_GET, asyncHandleRoot );
   asyncWebServer.on( "/login", HTTP_GET, asyncHandleLogin );
-  asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
-  asyncWebServer.on( "/setup", HTTP_GET, asyncHandleSetup );
+  asyncWebServer.on( "/setup", HTTP_GET, asyncHandleFullSetup );
   asyncWebServer.on( "/photo", HTTP_GET, asyncHandlePicture );
   asyncWebServer.on( "/stats", HTTP_GET, asyncHandleStatistics );
 
+  asyncWebServer.on( "/mozzsetup", HTTP_GET, asyncHandleSetup );
+  asyncWebServer.on( "/set", HTTP_GET, asyncHandleInput );
   asyncWebServer.on( "/fullsetup", HTTP_GET, asyncHandleFullSetup );
   asyncWebServer.on( "/status", HTTP_GET, asyncHandleStatus );
+
   asyncWebServer.on( "/control", HTTP_GET, asyncHandleCommand );
-//  asyncWebServer.on( "/xclk", HTTP_GET, asyncHandleXClk );
-
   asyncWebServer.on( "/capture", HTTP_GET, asyncHandleCapture );
-  asyncWebServer.on( "/stream", HTTP_GET, asyncHandleNotFound );
-  asyncWebServer.on( "/startLapse", HTTP_GET, asyncHandleNotFound );
-  asyncWebServer.on( "/stopLapse", HTTP_GET, asyncHandleNotFound );
+  asyncWebServer.on( "/stream", HTTP_GET, asyncHandleNotFound );  // TODO
 
-  asyncWebServer.on( "/delete", HTTP_GET, asyncHandleDelete );
+  asyncWebServer.on( "/delete", HTTP_GET, asyncHandleDelete );    // TODO
   asyncWebServer.on( "/archive", HTTP_GET, asyncHandleArchive );
-  asyncWebServer.on( "/sdcard", HTTP_GET, asyncHandleSDCardRemount );
+  asyncWebServer.on( "/sdcard", HTTP_GET, asyncHandleNotFound ); // TODO
 
   asyncWebServer.on( "/scan", HTTP_GET, asyncHandleScan );
   asyncWebServer.on( "/espReset", HTTP_GET, asyncHandleESPReset );
+
+  // asyncWebServer.on( "/xclk", HTTP_GET, asyncHandleXClk );
 
   asyncWebServer.onNotFound( asyncHandleNotFound );
 
