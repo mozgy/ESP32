@@ -232,17 +232,22 @@ void setup() {
 
   prnEspStats();
 
-  if( !LittleFS.begin() ) {
-    Serial.println( "An Error has occurred while mounting LittleFS" );
+  if( !LittleFS.begin( true ) ) {
+    Serial.println( "Formatting LittleFS" );
+    if( !LittleFS.begin( ) ) {
+      Serial.println( "An Error has occurred while mounting LittleFS" );
+    }
   }
 
 #ifdef HAVE_CAMERA
   delay( 100 );
   initCam();
   // flashOFF();
-  // turn off AI_THINKER LED; 
+#ifdef CAMERA_MODEL_AI_THINKER
+  // turn off AI_THINKER LED;
   digitalWrite( AI_THINKER_LED, LOW );
   Serial.println( "AI-Thinker LED OFF!" );
+#endif
 #endif
 
   delay( 10 );
