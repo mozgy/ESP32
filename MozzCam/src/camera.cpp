@@ -167,8 +167,10 @@ String getCameraStatus( void ) {
   jsonResponse += ",\"hmirror\":" + String( sensor->status.hmirror );
 //  jsonResponse += ",\"pixformat\":" + String( sensor->pixformat );
 //  jsonResponse += ",\"xclk\":" + String( sensor->xclk_freq_hz / 1000000 );
-  jsonResponse += ",\"timelapse\":" + ( timeLapse ) ? "0" : "1";
-  jsonResponse += ",\"flashled\":" + ( flashEnabled ) ? "0" : "1";
+  jsonResponse += ",\"timelapse\":";
+  jsonResponse += ( timeLapse ) ? "1" : "0";
+  jsonResponse += ",\"flashled\":";
+  jsonResponse += ( flashEnabled ) ? "1" : "0";
   jsonResponse += "}";
 
   Serial.println( jsonResponse );

@@ -16,7 +16,7 @@ String getHTMLRootText( void ) {
 
   webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head>";
   webText += "<body>";
-//  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
+  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   webText += "<p><a href=/stats>Statistics</a>";
   webText += "<br><a href=/setup>Setup</a>";
@@ -55,8 +55,8 @@ String getHTMLSetupText( void ) {
   webText += "<body>Camera Setup<form action='/set'>";
   webText += "<table><tr><td>Flash</td>";
   webText += "<td><div class='flashswitch'><input type='checkbox' name='flashswitch' value='flashOn' class='flashswitch-checkbox' id='flashswitch'";
-  if( flashEnabled )
-    webText += " checked";
+//  if( flashEnabled )
+//    webText += " checked";
   webText += ">";
   webText += "<label class='flashswitch-label' for='flashswitch'><span class='flashswitch-inner'></span><span class='flashswitch-switch'></span></label>";
   webText += "</div></td></tr>";

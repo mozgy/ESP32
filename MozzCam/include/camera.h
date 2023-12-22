@@ -36,8 +36,8 @@ extern framesize_t picFrameSize;
 // #define CAMERA_MODEL_ESP_EYE
 // #define CAMERA_MODEL_M5STACK_PSRAM
 // #define CAMERA_MODEL_M5STACK_WIDE
-// #define CAMERA_MODEL_AI_THINKER
-#define CAMERA_MODEL_XIAO_ESP32S3
+#define CAMERA_MODEL_AI_THINKER
+// #define CAMERA_MODEL_XIAO_ESP32S3
 #include "camera_pins.h"
 
 #define FLASH_LED LED_GPIO_NUM
@@ -48,6 +48,7 @@ extern framesize_t picFrameSize;
 
 // extern int picBrightness;
 // extern int picSaturation;
+extern bool flashEnabled;
 
 void initCam( void );
 void fnSetFrameSize( String frameSize );
