@@ -183,6 +183,7 @@ void initSDCard( void ) {
   if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
 //  if( !SD_MMC.begin( "/sdcard", true, true ) ) { // slow 1bit mode, format card
     Serial.println( "SD card init failed" );
+    timeLapse = false;
     return;
   }
 

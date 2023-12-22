@@ -28,7 +28,7 @@ const picSizeStrings_t foo[] = {
   "Framesize QXGA - 2048x1536"
 };
 
-#define PIC_SNAP_SIZE FRAMESIZE_VGA
+#define PIC_SNAP_SIZE FRAMESIZE_VGA // aka 8 from const_struct above, see enom below
 extern framesize_t picFrameSize;
 
 // Select camera model
@@ -51,7 +51,7 @@ extern framesize_t picFrameSize;
 extern bool flashEnabled;
 
 void initCam( void );
-void fnSetFrameSize( String frameSize );
+// void fnSetFrameSize( String frameSize );
 void flashON( void );
 void flashOFF( void );
 void flashLED( uint32_t );

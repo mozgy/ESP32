@@ -225,11 +225,11 @@ void asyncHandleInput( AsyncWebServerRequest *request ) {
   }
   Serial.print( " - " );
 
-  if( request->hasParam( "picSize" ) ) {
-    AsyncWebParameter* arg2 = request->getParam( "picSize" );
-    fnSetFrameSize( arg2->value() );
-    Serial.print( String( arg2->value() ) );
-  }
+//  if( request->hasParam( "picSize" ) ) {
+//    AsyncWebParameter* arg2 = request->getParam( "picSize" );
+//    fnSetFrameSize( arg2->value() );
+//    Serial.print( String( arg2->value() ) );
+//  }
 //  Serial.print( " - " );
 //
 //  if( request->hasParam( "timePeriod" ) ) {
@@ -321,6 +321,10 @@ void asyncHandleESPReset( AsyncWebServerRequest *request ) {
     return;
   }
 
+  Serial.println( "Restarting in 10 seconds" );
+  request->send( 200, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='30; URL=/'></head><body>ESP Restart!</body></html>" );
+  delay( 10000 );
+  WiFi.disconnect();
   ESP.restart();
 
 }

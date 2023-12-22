@@ -102,6 +102,7 @@ void initCam( void ) {
 
 }
 
+/*
 void fnSetFrameSize( String frameSize ) {
 
   if( frameSize == "FRAMESIZE_QQVGA" ) {
@@ -133,6 +134,7 @@ void fnSetFrameSize( String frameSize ) {
   sensor->set_framesize( sensor, picFrameSize );
 
 }
+  */
 
 String getCameraStatus( void ) {
 
