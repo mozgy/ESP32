@@ -16,7 +16,7 @@ String getHTMLRootText( void ) {
 
   webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head>";
   webText += "<body>";
-  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
+  webText += "Cam-" + String( CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   webText += "<p><a href=/stats>Statistics</a>";
   webText += "<br><a href=/setup>Setup</a>";

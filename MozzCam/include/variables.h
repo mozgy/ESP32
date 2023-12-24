@@ -7,7 +7,7 @@
 
 #define HAVE_CAMERA
 #define ESP_CAM_HOSTNAME "mozz-cam"
-#define AI_CAM_SERIAL "6"
+#define CAM_SERIAL "6"
 
 #define FLASH_ENABLED true
 #define TIME_LAPSE_MODE true
