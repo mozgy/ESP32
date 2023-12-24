@@ -20,7 +20,7 @@ String getHTMLRootText( void ) {
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   webText += "<p><a href=/stats>Statistics</a>";
   webText += "<br><a href=/setup>Setup</a>";
-  webText += "<br><a href=/photo>Photo</a>";
+//  webText += "<br><a href=/photo>Photo</a>";
   webText += "</body></html>";
 
   return webText; // TODO - make me pwetty !

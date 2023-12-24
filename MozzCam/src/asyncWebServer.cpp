@@ -343,7 +343,10 @@ void asyncHandleSDCardRemount( AsyncWebServerRequest *request ) {
     return;
   }
 
+  SD_MMC.end();
+  delay( 1000 );
   initSDCard();
+  request->send( 200, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='20; URL=/'></head><body>SD Card Remount!</body></html>" );
 
 }
 
@@ -471,7 +474,7 @@ void initAsyncWebServer( void ) {
 
   asyncWebServer.on( "/delete", HTTP_GET, asyncHandleDelete );    // TODO
   asyncWebServer.on( "/archive", HTTP_GET, asyncHandleArchive );
-  asyncWebServer.on( "/sdcard", HTTP_GET, asyncHandleNotFound ); // TODO
+  asyncWebServer.on( "/sdcard", HTTP_GET, asyncHandleSDCardRemount );
 
   asyncWebServer.on( "/scan", HTTP_GET, asyncHandleScan );
   asyncWebServer.on( "/espReset", HTTP_GET, asyncHandleESPReset );
