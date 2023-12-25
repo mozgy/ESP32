@@ -179,6 +179,19 @@ void getNTPTime( void ) {
 
 void initSDCard( void ) {
 
+// if defined( CAMERA_MODEL_XIAO_ESP32S3 )
+// if( !SD.begin( CAMERA_MODEL_XIAO_ESP32S3 ) { // ehm??
+// if defined( CAMERA_MODEL_AI_THINKER )
+//    bool setPins(int clk, int cmd, int d0);
+//    bool setPins(int clk, int cmd, int d0, int d1, int d2, int d3);
+
+#if defined(CAMERA_MODEL_XIAO_ESP32S3)
+// pins configured for SD card on this camera board
+  #define SD_MMC_CLK 7 
+  #define SD_MMC_CMD 9
+  #define SD_MMC_D0 8
+#endif
+
 //  if( !SD_MMC.begin() ) { // fast 4bit mode
   if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
 //  if( !SD_MMC.begin( "/sdcard", true, true ) ) { // slow 1bit mode, format card

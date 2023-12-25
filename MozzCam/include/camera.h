@@ -44,6 +44,8 @@ extern framesize_t picFrameSize;
 #define AI_THINKER_LED 33
 #define FLASH_ENABLE true
 
+#define XIAO_ESP32S3_SDCS_PIN 21
+
 #include "variables.h"
 
 // extern int picBrightness;
