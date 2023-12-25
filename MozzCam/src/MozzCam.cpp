@@ -240,6 +240,11 @@ void setup() {
     }
   }
 
+#ifndef CAMERA_MODEL_AI_THINKER
+  // using LED only on ESP32-CAM (originaly made by AI-Thinker)
+  flashEnabled = false;
+#endif
+
 #ifdef HAVE_CAMERA
   delay( 100 );
   initCam();

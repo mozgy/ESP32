@@ -165,7 +165,11 @@ void asyncHandleCommand( AsyncWebServerRequest *request ) {
   } else if( variable == "timelapse" ) {
     timeLapse = !timeLapse;
   } else if( variable == "flashled" ) {
+#if defined( CAMERA_MODEL_AI_THINKER )
     flashEnabled = !flashEnabled;
+#else
+    flashEnabled = false;
+#endif
   } else {
     err = -1;
   }
