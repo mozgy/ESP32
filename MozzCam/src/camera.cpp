@@ -376,7 +376,7 @@ void doSnapSavePhoto( void ) {
   //  process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
   if( timeLapse ) {
     photoFP.write( photoFrameBuffer->buf, photoFrameLength );
-    Serial.println( "Wrote file .." );
+    Serial.println( "Time Lapse ON - Wrote File" );
   }
 
   //return the frame buffer back to the driver for reuse

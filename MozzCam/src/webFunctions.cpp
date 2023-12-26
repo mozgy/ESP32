@@ -38,7 +38,7 @@ String getHTMLStatisticsText( void ) {
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   fnElapsedStr( elapsedTimeString );
   webText += String( elapsedTimeString ) + "<br>";
-  sprintf( tmpStr, "Used space %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
+  sprintf( tmpStr, "Total space: %lluMB - Used space %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024), SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr );
   webText += "<br>Time Period " + String( waitTime );
   webText += "</body></html>";

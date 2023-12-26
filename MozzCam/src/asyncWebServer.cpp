@@ -98,13 +98,13 @@ void asyncHandleCapture( AsyncWebServerRequest *request ) {
   if( request->hasParam( "_cb" ) ) {
     AsyncWebParameter* arg = request->getParam( "_cb" );
     value = arg->value().c_str();
-    // ToDo something with this timestamp value
   }
   if( !timeLapse )  // if on timelapse mode just take last photo taken
     doSnapSavePhoto();
   AsyncWebServerResponse *response = request->beginResponse( 200, "image/jpeg", photoFrame );
   response->addHeader( "Content-Disposition", "inline; filename=photo.jpg" );
   response->addHeader( "Access-Control-Allow-Origin", "*" );
+  response->addHeader( "X-Timestamp", value );
 /* this has to be inside capture {}
   char ts[32];
   snprintf(ts, 32, "%lld.%06ld", fb->timestamp.tv_sec, fb->timestamp.tv_usec);
