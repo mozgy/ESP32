@@ -38,8 +38,10 @@ String getHTMLStatisticsText( void ) {
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   fnElapsedStr( elapsedTimeString );
   webText += String( elapsedTimeString ) + "<br>";
+#ifdef HAVE_SDCARD
   sprintf( tmpStr, "Total space: %lluMB - Used space %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024), SD_MMC.usedBytes() / (1024 * 1024) );
   webText += String( tmpStr );
+#endif
   webText += "<br>Time Period " + String( waitTime );
   webText += "</body></html>";
 

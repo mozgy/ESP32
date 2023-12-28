@@ -185,12 +185,14 @@ void initSDCard( void ) {
 //    bool setPins(int clk, int cmd, int d0);
 //    bool setPins(int clk, int cmd, int d0, int d1, int d2, int d3);
 
+/* maybe it's just 6.4.0 release bug
 #if defined(CAMERA_MODEL_XIAO_ESP32S3)
 // pins configured for SD card on this camera board
   #define SD_MMC_CLK 7 
   #define SD_MMC_CMD 9
   #define SD_MMC_D0 8
 #endif
+  */
 
 //  if( !SD_MMC.begin() ) { // fast 4bit mode
   if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
@@ -261,12 +263,11 @@ void setup() {
 #ifdef HAVE_CAMERA
   delay( 100 );
   initCam();
-  // flashOFF();
-#ifdef CAMERA_MODEL_AI_THINKER
+ #ifdef CAMERA_MODEL_AI_THINKER
   // turn off AI_THINKER LED;
   digitalWrite( AI_THINKER_LED, LOW );
   Serial.println( "AI-Thinker LED OFF!" );
-#endif
+ #endif
 #endif
 
   delay( 10 );
@@ -276,7 +277,7 @@ void setup() {
   Serial.println( WiFi.localIP() );
 
   // [E][SD_MMC.cpp:132] begin(): Failed to mount filesystem. If you want the card to be formatted, set format_if_mount_failed = true.
-  initSDCard( );
+//  initSDCard( );
 
   initOTA();
   initAsyncWebServer();

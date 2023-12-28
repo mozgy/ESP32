@@ -339,7 +339,6 @@ void asyncHandleArchive( AsyncWebServerRequest *request ) {
 
 }
 
-// FIXME - NOT WORKY !!
 void asyncHandleSDCardRemount( AsyncWebServerRequest *request ) {
 
   if( !request->authenticate( http_username, http_password ) ) {
@@ -347,6 +346,7 @@ void asyncHandleSDCardRemount( AsyncWebServerRequest *request ) {
     return;
   }
 
+// TODO - Add #define HAVE_SDCARD option
   SD_MMC.end();
   delay( 1000 );
   initSDCard();
@@ -385,22 +385,6 @@ void asyncHandleDelete( AsyncWebServerRequest *request ) {
   request->send( 200, "text/plain", webText );
 
 }
-
-/*
-void asyncHandleStartAP( AsyncWebServerRequest *request ) {
-
-  if( !request->authenticate( http_username, http_password ) ) {
-    request->send( 200, "text/plain", "Not Authorized!" );
-    return;
-  }
-  WiFi.softAP( "MozzCam" );
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print( "AP IP address: " );
-  Serial.println( IP );
-  request->send( 200, "text/plain", "AP Started!" );
-
-}
-*/
 
 void asyncHandleNotFound( AsyncWebServerRequest *request ) {
 

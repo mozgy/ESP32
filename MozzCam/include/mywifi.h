@@ -9,6 +9,9 @@
 
 #include "variables.h"
 
+// #define CONFIG_ESP_WIFI_SOFTAP_SUPPORT 0
+// #define CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT 0
+
 #define WIFI_DISC_DELAY 30000L
 extern unsigned long wifiWaitTime;
 extern int wifiConnTries;

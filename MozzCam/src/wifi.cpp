@@ -75,7 +75,9 @@ void initWiFi( void ) {
   wifiSTATries = 1;
   bool wifiNoSTA = false;
 
+#ifdef CAMERA_MODEL_AI_THINKER
   flashLED( 300, true ); delay( 80 ); flashLED( 300, true );
+#endif
   WiFi.softAPdisconnect( true );
   WiFi.disconnect( true );
   WiFi.setMinSecurity( WIFI_AUTH_WPA_PSK );
@@ -94,7 +96,9 @@ void initWiFi( void ) {
   WiFi.setSleep( false );
 
   WiFi.scanNetworks( true );
+#ifdef CAMERA_MODEL_AI_THINKER
   flashLED( 50, true ); delay( 80 ); flashLED( 50, true ); delay( 80 ); flashLED( 50, true );
+#endif
 
 }
 

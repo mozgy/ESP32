@@ -3,14 +3,16 @@
 
 #include <Arduino.h>
 
-#define SW_VERSION "0.19.6"
+#define SW_VERSION "0.19.8"
 
 #define HAVE_CAMERA
 #define ESP_CAM_HOSTNAME "mozz-cam"
-#define CAM_SERIAL "2"
+#define CAM_SERIAL "X7"
 
 #define FLASH_ENABLED true
-#define TIME_LAPSE_MODE true
+
+#undef HAVE_SDCARD
+#define TIME_LAPSE_MODE false
 #define HIDE_ROOT_DIR false
 
 #define DBG_OUTPUT_PORT Serial
