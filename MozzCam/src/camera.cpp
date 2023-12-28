@@ -70,26 +70,10 @@ void initCam( void ) {
     Serial.printf( "Camera init failed with error 0x%x", err );
     delay( 2000 );
     ESP.restart();
-//    return;
   }
   Serial.println( "Camera ON!" );
 
   sensor_t * s = esp_camera_sensor_get();
-
-/*
-  //initial sensors are flipped vertically and colors are a bit saturated
-  if( s->id.PID == OV3660_PID ) {
-    s->set_vflip( s, 1 );       // flip it back
-    s->set_brightness( s, 1 );  // up the brightness just a bit
-    s->set_saturation( s, -2 ); // lower the saturation
-  }
-  */
-/*
-  // drop down frame size for higher initial frame rate
-  if(config.pixel_format == PIXFORMAT_JPEG){
-    s->set_framesize(s, FRAMESIZE_QVGA);
-  }
-  */
 
 #if defined(CAMERA_MODEL_M5STACK_WIDE) || defined(CAMERA_MODEL_M5STACK_ESP32CAM)
   s->set_vflip(s, 1);
@@ -100,10 +84,11 @@ void initCam( void ) {
   s->set_vflip(s, 1);
 #endif
 
-  s->set_framesize( s, picFrameSize );
+  s->set_framesize( s, FRAMESIZE_VGA );
 
 }
 
+/*
 void fnSetFrameSize( String frameSize ) {
 
   if( frameSize == "FRAMESIZE_QQVGA" ) {
@@ -135,6 +120,7 @@ void fnSetFrameSize( String frameSize ) {
   sensor->set_framesize( sensor, picFrameSize );
 
 }
+  */
 
 String getCameraStatus( void ) {
 
@@ -315,7 +301,7 @@ void doSnapSavePhoto( void ) {
   tmstruct.tm_year = 0;
   photoFrame = "";
 
-  if( timeLapse ) {
+  if( timeLapse && SDCardOK ) {
     String photoFileDir;
     String photoFileName;
 

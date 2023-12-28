@@ -14,8 +14,7 @@ String getHTMLRootText( void ) {
 
   String webText;
 
-  webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head>";
-  webText += "<body>";
+  webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head><body>";
   webText += "Cam-" + String( CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   webText += "<p><a href=/stats>Statistics</a>";
@@ -32,15 +31,16 @@ String getHTMLStatisticsText( void ) {
   String webText;
   char tmpStr[20];
 
-  webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head>";
-  webText += "<body>";
-//  webText += "AI-Cam-" + String( AI_CAM_SERIAL ) + "<br>";
+  webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head><body>";
+  webText += "Cam-" + String( CAM_SERIAL ) + "<br>";
   webText += "Software Version " + String( SW_VERSION ) + "<br>";
   fnElapsedStr( elapsedTimeString );
-  webText += String( elapsedTimeString ) + "<br>";
+  webText += String( elapsedTimeString );
 #ifdef HAVE_SDCARD
-  sprintf( tmpStr, "Total space: %lluMB - Used space %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024), SD_MMC.usedBytes() / (1024 * 1024) );
-  webText += String( tmpStr );
+  if ( SDCardOK ) {
+    sprintf( tmpStr, "<br>Total space: %lluMB - Used space %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024), SD_MMC.usedBytes() / (1024 * 1024) );
+    webText += String( tmpStr );
+  }
 #endif
   webText += "<br>Time Period " + String( waitTime );
   webText += "</body></html>";
@@ -102,16 +102,8 @@ bool loadFromSDCard( AsyncWebServerRequest *request ) {
   String baseName = path.substring( lastSlash + 1, path.length() );
   String fileName = path.c_str();
 
-/*  Do'h - String has some interesting typecasts
-  Serial.print( "SDCard load - " );
-  Serial.print( path );
-  Serial.print( ", " );
-  Serial.print( fileName );
-  Serial.print( ", " );
-  Serial.println( baseName );
-  // SDCard load filename - google.com:443
-  // SDCard load filename - www.sneakersnstuff.com:443
-  */
+// SDCard load filename - google.com:443
+// SDCard load filename - www.sneakersnstuff.com:443
   Serial.printf( "SDCard load - %s, %s, %s\n", path.c_str(), fileName.c_str(), baseName.c_str() );
 
   File dataFile = SD_MMC.open( fileName );

@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define SW_VERSION "0.19.8"
+#define SW_VERSION "0.19.12"
 
 #define HAVE_CAMERA
 #define ESP_CAM_HOSTNAME "mozz-cam"
@@ -11,7 +11,7 @@
 
 #define FLASH_ENABLED true
 
-#undef HAVE_SDCARD
+#define HAVE_SDCARD
 #define TIME_LAPSE_MODE false
 #define HIDE_ROOT_DIR false
 

@@ -27,10 +27,10 @@ char elapsedTimeString[40];
 char currentDateTime[17];
 
 String photoFrame;
-framesize_t picFrameSize = PIC_SNAP_SIZE;
 
 bool flashEnabled = FLASH_ENABLED;
 bool timeLapse = TIME_LAPSE_MODE;
+bool SDCardOK;
 
 Ticker tickerSnapPic;
 boolean tickerFired;
@@ -78,11 +78,14 @@ void fnElapsedStr( char *str ) {
   minute = ( sec % 3600 ) / 60;
   hour = sec / 3600;
   day = hour / 24;
+  if ( day > 0 ) {
+    hour = hour % 24;
+  }
   sprintf( str, "Elapsed " );
-  if ( hour == 0 ) {
-    sprintf( str, "%s   ", str );
-  } else {
+  if ( hour != 0 ) {
     sprintf( str, "%s%2d:", str, hour );
+//  } else {
+//    sprintf( str, "%s   ", str );
   }
   if ( minute >= 10 ) {
     sprintf( str, "%s%2d:", str, minute );
@@ -102,6 +105,9 @@ void fnElapsedStr( char *str ) {
     sprintf( str, "%s0%1d", str, ( sec % 60 ) );
   } else {
     sprintf( str, "%s%2d", str, ( sec % 60 ) );
+  }
+  if ( day > 0 ) {
+    sprintf( str, "%s%d=", str, day );
   }
 
 }
@@ -194,10 +200,12 @@ void initSDCard( void ) {
 #endif
   */
 
+  SDCardOK = true;
 //  if( !SD_MMC.begin() ) { // fast 4bit mode
   if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
 //  if( !SD_MMC.begin( "/sdcard", true, true ) ) { // slow 1bit mode, format card
     Serial.println( "SD card init failed" );
+    SDCardOK = false;
     timeLapse = false;
     return;
   }
@@ -277,7 +285,7 @@ void setup() {
   Serial.println( WiFi.localIP() );
 
   // [E][SD_MMC.cpp:132] begin(): Failed to mount filesystem. If you want the card to be formatted, set format_if_mount_failed = true.
-//  initSDCard( );
+  initSDCard( );
 
   initOTA();
   initAsyncWebServer();
