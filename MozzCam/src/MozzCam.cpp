@@ -278,6 +278,16 @@ void setup() {
     }
   }
 
+  delay( 10 );
+  initWiFi();
+  wifiWaitTime = millis();
+  getNTPTime();
+  Serial.println( WiFi.localIP() );
+
+  delay( 10 );
+  // [E][SD_MMC.cpp:132] begin(): Failed to mount filesystem. If you want the card to be formatted, set format_if_mount_failed = true.
+  initSDCard( );
+
 #ifndef CAMERA_MODEL_AI_THINKER
   // using LED only on ESP32-CAM (originaly made by AI-Thinker)
   flashEnabled = false;
@@ -294,14 +304,6 @@ void setup() {
 #endif
 
   delay( 10 );
-  initWiFi();
-  wifiWaitTime = millis();
-  getNTPTime();
-  Serial.println( WiFi.localIP() );
-
-  // [E][SD_MMC.cpp:132] begin(): Failed to mount filesystem. If you want the card to be formatted, set format_if_mount_failed = true.
-  initSDCard( );
-
   initOTA();
   initAsyncWebServer();
 
