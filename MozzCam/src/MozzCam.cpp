@@ -22,6 +22,7 @@
 
 long timeZone = 1;
 byte daySaveTime = 1;
+struct tm startTime;
 
 char elapsedTimeString[40];
 char currentDateTime[17];
@@ -82,6 +83,9 @@ void fnElapsedStr( char *str ) {
     hour = hour % 24;
   }
   sprintf( str, "Elapsed " );
+  if ( day > 0 ) {
+    sprintf( str, "%s%d:", str, day );
+  }
   if ( hour != 0 ) {
     sprintf( str, "%s%2d:", str, hour );
 //  } else {
@@ -105,9 +109,6 @@ void fnElapsedStr( char *str ) {
     sprintf( str, "%s0%1d", str, ( sec % 60 ) );
   } else {
     sprintf( str, "%s%2d", str, ( sec % 60 ) );
-  }
-  if ( day > 0 ) {
-    sprintf( str, "%s%d=", str, day );
   }
 
 }
@@ -159,20 +160,18 @@ void initOTA( void ) {
 
 void getNTPTime( void ) {
 
-  struct tm tmstruct;
-
   Serial.print( "Contacting Time Server - " );
 //  configTime( 3600*timeZone, daySaveTime*3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org" );
   configTime( 3600*timeZone, daySaveTime*3600, "tik.t-com.hr", "tak.t-com.hr" );
   delay( 2000 );
-  tmstruct.tm_year = 0;
-  getLocalTime( &tmstruct, 5000 );
-  while( tmstruct.tm_year == 70 ) {
+  startTime.tm_year = 0;
+  getLocalTime( &startTime, 5000 );
+  while( startTime.tm_year == 70 ) {
     Serial.print( "NTP failed, trying again .. " );
     delay( 5000 );
-    getLocalTime( &tmstruct, 5000 );
+    getLocalTime( &startTime, 5000 );
   }
-  Serial.printf( "Local Time : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year)+1900, (tmstruct.tm_mon)+1, tmstruct.tm_mday, tmstruct.tm_hour , tmstruct.tm_min, tmstruct.tm_sec );
+  Serial.printf( "Local Time : %d-%02d-%02d %02d:%02d:%02d\n", (startTime.tm_year)+1900, (startTime.tm_mon)+1, startTime.tm_mday, startTime.tm_hour , startTime.tm_min, startTime.tm_sec );
 
 //  // yes, I know it can be oneliner -
 //  sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
@@ -186,24 +185,40 @@ void getNTPTime( void ) {
 void initSDCard( void ) {
 
 // if defined( CAMERA_MODEL_XIAO_ESP32S3 )
-// if( !SD.begin( CAMERA_MODEL_XIAO_ESP32S3 ) { // ehm??
-// if defined( CAMERA_MODEL_AI_THINKER )
+// if( !SD.begin( XIAO_ESP32S3_SDCS_PIN ) { // ehm??
 //    bool setPins(int clk, int cmd, int d0);
 //    bool setPins(int clk, int cmd, int d0, int d1, int d2, int d3);
 
-/* maybe it's just 6.4.0 release bug
-#if defined(CAMERA_MODEL_XIAO_ESP32S3)
-// pins configured for SD card on this camera board
-  #define SD_MMC_CLK 7 
-  #define SD_MMC_CMD 9
-  #define SD_MMC_D0 8
-#endif
-  */
-
   SDCardOK = true;
+#ifdef CAMERA_MODEL_AI_THINKER
 //  if( !SD_MMC.begin() ) { // fast 4bit mode
   if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
 //  if( !SD_MMC.begin( "/sdcard", true, true ) ) { // slow 1bit mode, format card
+#else
+ #ifdef CAMERA_MODEL_XIAO_ESP32S3
+// this FUQS up Camera get picture ..
+// pins configured for SD card on this camera board
+// WHICH one of those is XIAO Sense ???
+
+//  #define SD_MMC_CLK 7
+//  #define SD_MMC_CMD 9
+//  #define SD_MMC_D0 8
+
+//  #define SD_MMC_D0   2
+//  #define SD_MMC_CLK  14
+//  #define SD_MMC_CMD  15
+
+// #define SD_MMC_CMD 38
+// #define SD_MMC_CLK 39
+// #define SD_MMC_D0  40
+
+//  SD_MMC.setPins( SD_MMC_CLK, SD_MMC_CMD, SD_MMC_D0 );
+ #endif
+// bool SDMMCFS::begin(const char * mountpoint, bool mode1bit, bool format_if_mount_failed, int sdmmc_frequency, uint8_t maxOpenFiles)
+  // if( !SD_MMC.begin( "/sdcard", true, false, SDMMC_FREQ_DEFAULT, 5 ) ) {
+  // if( !SD_MMC.begin( "/sdcard", true, false, 20000 ) ) {
+  if( !SD_MMC.begin() ) {
+#endif
     Serial.println( "SD card init failed" );
     SDCardOK = false;
     timeLapse = false;
@@ -319,7 +334,7 @@ void loop() {
     }
     Serial.println();
     fnElapsedStr( elapsedTimeString );
-    Serial.println( elapsedTimeString );
+    Serial.printf( "%s - Startup Time : %d-%02d-%02d %02d:%02d:%02d\n", elapsedTimeString, (startTime.tm_year)+1900, (startTime.tm_mon)+1, startTime.tm_mday, startTime.tm_hour , startTime.tm_min, startTime.tm_sec );
     if( oldTickerValue != waitTime ) {
       tickerSnapPic.detach( );
       tickerSnapPic.attach( waitTime, flagSnapPicTicker );

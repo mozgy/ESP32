@@ -362,16 +362,16 @@ void doSnapSavePhoto( void ) {
 
   //  //replace this with your own function
   //  process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
-  if( timeLapse ) {
+  if( timeLapse && SDCardOK ) {
     photoFP.write( photoFrameBuffer->buf, photoFrameLength );
-    Serial.println( "Time Lapse ON - Wrote File" );
+    Serial.printf( "Time Lapse ON - Wrote File - Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024) );
   }
 
   //return the frame buffer back to the driver for reuse
   esp_camera_fb_return( photoFrameBuffer );
   photoFrameBuffer = NULL;
 
-  if( timeLapse ) {
+  if( timeLapse && SDCardOK ) {
     photoFP.close();
   }
 
