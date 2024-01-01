@@ -294,13 +294,8 @@ void setup() {
 #endif
 
 #ifdef HAVE_CAMERA
-  delay( 100 );
+  delay( 10 );
   initCam();
- #ifdef CAMERA_MODEL_AI_THINKER
-  // turn off AI_THINKER LED;
-  digitalWrite( AI_THINKER_LED, LOW );
-  Serial.println( "AI-Thinker LED OFF!" );
- #endif
 #endif
 
   delay( 10 );

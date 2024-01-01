@@ -29,7 +29,7 @@ String getHTMLRootText( void ) {
 String getHTMLStatisticsText( void ) {
 
   String webText;
-  char tmpStr[20];
+  char tmpStr[80];
 
   webText = "<!doctype html><html><head><title>Mozz Cam</title><link rel='stylesheet' type='text/css' href='mozz.css'></head><body>";
   webText += "Cam-" + String( CAM_SERIAL ) + "<br>";

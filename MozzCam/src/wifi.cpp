@@ -4,6 +4,7 @@
 // MIT Licence
 //
 
+#include "camera.h" // for AI_THINKER_LED #define
 #include "mywifi.h"
 #include "credentials.h"
 

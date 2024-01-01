@@ -348,8 +348,6 @@ void asyncHandleSDCardRemount( AsyncWebServerRequest *request ) {
 
 // TODO - make it runtime
 #ifdef HAVE_SDCARD
-  request->send( 200, "text/html", "<!doctype html><html><head><meta http-equiv='refresh' content='60; URL=/'></head><body>NO SD Card!</body></html>" );
-#else
   SD_MMC.end();
   delay( 1000 );
   initSDCard();
