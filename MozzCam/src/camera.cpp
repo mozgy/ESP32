@@ -307,15 +307,25 @@ void doSnapSavePhoto( void ) {
 
     getLocalTime( &tmstruct, 5000 );
 
+    photoFileDir = String( "/mozz-cam/" );  // /mozz-cam/
+    if( !SD_MMC.mkdir( photoFileDir ) ) {
+      Serial.println( "MKDIR Failed!" );
+    }
     sprintf( currentDateTime, "%04d\0", (tmstruct.tm_year)+1900 );
-    photoFileDir = String( "/mozz-cam/" ) + currentDateTime;  // /mozz-cam/YYYY
-    SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
+    photoFileDir += String( currentDateTime );  // /mozz-cam/YYYY
+    if( !SD_MMC.mkdir( photoFileDir ) ) {
+      Serial.println( "MKDIR Failed!" );
+    }
     sprintf( currentDateTime, "/%02d%02d\0", (tmstruct.tm_mon)+1, tmstruct.tm_mday );
     photoFileDir += String( currentDateTime );  // /mozz-cam/YYYY/MMDD
-    SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
+    if( !SD_MMC.mkdir( photoFileDir ) ) {
+      Serial.println( "MKDIR Failed!" );
+    }
     sprintf( currentDateTime, "/%02d\0", tmstruct.tm_hour );
     photoFileDir += String( currentDateTime );
-    SD_MMC.mkdir( photoFileDir ); // TODO - check error/return status
+    if( !SD_MMC.mkdir( photoFileDir ) ) {
+      Serial.println( "MKDIR Failed!" );
+    }
 
     // yes, I know it can be oneliner -
     sprintf( currentDateTime, "%04d", (tmstruct.tm_year)+1900 );
@@ -329,7 +339,7 @@ void doSnapSavePhoto( void ) {
 
     photoFP = SD_MMC.open( photoFileName, FILE_WRITE );
     if( !photoFP ) {
-      Serial.println( "SD Card file open error" );
+      Serial.println( "SD Card file open for write error" );
       return;
     }
   }
